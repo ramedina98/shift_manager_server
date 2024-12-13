@@ -3,15 +3,13 @@
   "version": "1.0.0",
   "main": "build/server.js",
   "scripts": {
-    "start": "",
-    "dev": "node build/server.js",
     "test": "jest --config jest.config.ts --coverage",
-    "build": "rm -rf build/ && tsc"
+    "start": "node build/server.js"
   },
   "keywords": [],
-  "author": "",
+  "author": "Richard Medina",
   "license": "ISC",
-  "description": "",
+  "description": "Servidor para Shift Creator App",
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "bcrypt": "^5.1.1",
