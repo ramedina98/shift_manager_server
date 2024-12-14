@@ -133,7 +133,7 @@ const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function
             if (typeof id_asig_consul === 'number') {
                 return res.status(400).json({ error: 'Consultorio ocupado, verifique bien el numero de consultorio en el que esta.' });
             }
-            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 });
+            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 24 * 60 * 60 * 1000 });
             res.status(200).json({
                 message: 'Inicio de sesión exitoso',
                 accessToken: result.accessToken,

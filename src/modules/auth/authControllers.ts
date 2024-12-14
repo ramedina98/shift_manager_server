@@ -157,7 +157,7 @@ const loginController = async (req: Request, res: Response): Promise<any> => {
             }
 
 
-            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 });
+            res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 24 * 60 * 60 * 1000 });
             res.status(200).json({
                 message: 'Inicio de sesión exitoso',
                 accessToken: result.accessToken,
