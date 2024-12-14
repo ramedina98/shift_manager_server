@@ -18,5 +18,6 @@ export const SERVER = {
     EHOST: process.env.PUBLIC_HOST!,
     EUSER: process.env.PUBLIC_USER!,
     EPASS: process.env.PUBLIC_PASS!,
-    FRONT_SERVER: process.env.FRONTEND_SERVER!
+    FRONT_SERVER: process.env.FRONTEND_SERVER1!,
+    FRONT_SERVER2: process.env.FRONTEND_SERVER2!
 };

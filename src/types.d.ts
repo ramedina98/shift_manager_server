@@ -12,7 +12,8 @@ declare namespace NodeJS{
         PUBLIC_PASS: string;
         JWT_TIME_SIGN: string;
         JWT_TIME_REFRESH: string;
-        FRONTEND_SERVER: string;
+        FRONTEND_SERVER1: string;
+        FRONTEND_SERVER2: string;
     }
 }
 

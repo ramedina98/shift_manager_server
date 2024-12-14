@@ -4,6 +4,7 @@
   "main": "build/server.js",
   "scripts": {
     "test": "jest --config jest.config.ts --coverage",
+    "build": "rm -rf build/ && tsc",
     "prisma:migrate": "npx prisma migrate deploy",
     "prisma:generate": "npx prisma generate",
     "start": "node ./build/server.js"
