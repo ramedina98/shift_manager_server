@@ -16,7 +16,7 @@ exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exp
 const timeUtils_1 = require("../../utils/timeUtils");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const logging_1 = __importDefault(require("../../config/logging"));
-const webSocketServer_1 = __importDefault(require("../../webSocketServer"));
+const server_1 = require("../../server");
 /**
  * @method GET
  *
@@ -142,7 +142,7 @@ const webSocketMessage = (title, message, turno, code) => __awaiter(void 0, void
         if (typeof data === 'number') {
             logging_1.default.error(`Error: no hay datos. Status: ${data}}`);
         }
-        webSocketServer_1.default.clients.forEach((client) => {
+        server_1.wss.clients.forEach((client) => {
             if (client.readyState === 1) {
                 client.send(JSON.stringify({
                     code: code,

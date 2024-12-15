@@ -15,7 +15,7 @@ import { IUser } from "../../interfaces/IUser";
 import { formatDateTime } from "../../utils/timeUtils";
 import prisma from "../../config/prismaClient";
 import logging from "../../config/logging";
-import wss from "../../webSocketServer";
+import { wss } from "../../server";
 
 /**
  * @method GET
