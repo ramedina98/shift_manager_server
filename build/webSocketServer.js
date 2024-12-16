@@ -30,7 +30,7 @@ const configureWebSocket = (server) => {
             logging_1.default.info(`[WebSocket] Client disconnected (code: ${code}, reason: ${reason})`);
         });
     });
-    logging_1.default.info('[WebSocketServer] WebSocket server configured successfully.');
+    logging_1.default.info('[WebSocketServer] WebSocket server configured successfully');
     return wss;
 };
 exports.default = configureWebSocket;

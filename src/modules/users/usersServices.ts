@@ -247,6 +247,9 @@ const officeAssignment = async (id_doc: string, num_consultorio: number): Promis
         });
 
         if(emptyOffice !== null){
+            if(emptyOffice.id_doc === id_doc){
+                return emptyOffice.id_asignacion;
+            }
             return 201;
         }
 

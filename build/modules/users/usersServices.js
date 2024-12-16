@@ -236,6 +236,9 @@ const officeAssignment = (id_doc, num_consultorio) => __awaiter(void 0, void 0, 
             }
         });
         if (emptyOffice !== null) {
+            if (emptyOffice.id_doc === id_doc) {
+                return emptyOffice.id_asignacion;
+            }
             return 201;
         }
         // CREATE REGISTER...

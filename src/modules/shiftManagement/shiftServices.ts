@@ -194,6 +194,16 @@ const AssignedConsultation = async (id_doc: string, id_consulta: number, nombre_
             }
         });
 
+        // when the assignment is done, we deactivate the patient...
+        await prisma.consulta.update({
+            where: {
+                id_consulta: id_consulta,
+            },
+            data: {
+                activo: false,
+            }
+        });
+
         const title: string = `Turno ${turno}`;
         const message: string = `${nombre_paciente} pase con Dr. ${nombre_doc}, consultorio ${consultorio}`;
         await webSocketMessage(title, message, null, 1);
@@ -290,16 +300,6 @@ const shiftAsignado = async (id_doc: string, nombre_doc: string, apellido_doc: s
 
         // patient assignment record...
         const id_asignacion: string = await AssignedConsultation(id_doc, nextPatient.id_consulta, `${nextPatient?.nombre_paciente} ${nextPatient?.apellido_paciente}`, consultorio?.num_consultorio, `${nombre_doc} ${apellido_doc}`, nextPatient?.turno);
-
-        // when the assignment is done, we deactivate the patient...
-        await prisma.consulta.update({
-            where: {
-                id_consulta: nextPatient.id_consulta,
-            },
-            data: {
-                activo: false,
-            }
-        });
 
         // Return formatted shift information
         return {

@@ -34,7 +34,7 @@ const configureWebSocket = (server: Server): WebSocketServer => {
         });
     });
 
-    logging.info('[WebSocketServer] WebSocket server configured successfully.');
+    logging.info('[WebSocketServer] WebSocket server configured successfully');
     return wss;
 };
 
