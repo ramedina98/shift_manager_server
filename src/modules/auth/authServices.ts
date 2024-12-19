@@ -309,7 +309,7 @@ const recoverdPassword = async (user_name: string): Promise<string | number> => 
         // create the token...
         const token: string = recoveryToken(user.id_user);
 
-        let subject = 'Recuperación de contraseña - Hospital Santa Margarita';
+        let subject = 'Recuperación de contraseña - Hospital San Jose, de los ojos.';
         // Mensaje padre
         let message = `
             <!DOCTYPE html>
@@ -321,7 +321,7 @@ const recoverdPassword = async (user_name: string): Promise<string | number> => 
                 <style>
                     body {
                         font-family: Arial, sans-serif;
-                        color: #333333;
+                        color: #8399b0;
                         line-height: 1.6;
                     }
                     .container {
@@ -330,20 +330,21 @@ const recoverdPassword = async (user_name: string): Promise<string | number> => 
                         padding: 20px;
                         border: 1px solid #dddddd;
                         border-radius: 5px;
-                        background-color: #f9f9f9;
+                        background-color: #c8d3de;
+                        shadow: 1px 1px 0pxrgba(20, 20, 20, 0.2);
                     }
                     .header {
                         text-align: center;
                     }
                     .recovery-code {
-                        color: green;
+                        color: #1d3245;
                         font-weight: bold;
                     }
                     .footer {
                         margin-top: 20px;
                         text-align: center;
                         font-size: 0.9em;
-                        color: #555555;
+                        color:rgb(53, 70, 90);
                     }
                 </style>
             </head>
@@ -359,7 +360,7 @@ const recoverdPassword = async (user_name: string): Promise<string | number> => 
                     <p>Agradecemos su atención y quedamos a su disposición para cualquier consulta adicional.</p>
                     <div class="footer">
                         <p>Saludos cordiales,</p>
-                        <p>Gestor de turnos,<br><span class="recovery-code">Hospital Santa Margarita</span></p>
+                        <p>Gestor de turnos,<br><span class="recovery-code">Hospital San Jose, de los ojos</span></p>
                     </div>
                 </div>
             </body>
@@ -438,4 +439,14 @@ const resetForgotenPassword = async (token: string, newPass: string): Promise<st
     }
 }
 
-export { getUsers, checkIfTokenIsRevoked, insertNewUser, login, logout, deleteRefreshToken, refreshToken, recoverdPassword, resetForgotenPassword };
+export {
+    getUsers,
+    checkIfTokenIsRevoked,
+    insertNewUser,
+    login,
+    logout,
+    deleteRefreshToken,
+    refreshToken,
+    recoverdPassword,
+    resetForgotenPassword
+};
