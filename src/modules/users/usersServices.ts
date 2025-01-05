@@ -13,6 +13,8 @@ import logging from "../../config/logging";
 import ExcelJS from 'exceljs';
 // import fs from "fs";
 import path from "path";
+import * as os from "os";
+import * as fs from "fs";
 
 /**
  * @method GET
@@ -213,10 +215,16 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
             });
         });
 
-        // TODO: definir aqui donde podría ser guardada esta información, para ser accedida facilmente por los administradores...
+        const desktopPath = path.join(os.homedir(), 'Desktop');
+        const reporteFolderPath = path.join(desktopPath, 'reportes');
 
-        // define the path...
-        const filePath = path.join(__dirname, `Reporte_Diario_${nombre_doc}_${startOfDay.toISOString().slice(0, 10)}.xlsx`);
+        // create the reporter folder if it does not exits...
+        if(!fs.existsSync(reporteFolderPath)){
+            fs.mkdirSync(reporteFolderPath);
+            logging.info('Carpeta "reporte" creada en el escritorio.');
+        }
+
+        const filePath = path.join(reporteFolderPath, `/Reporte_Diario${nombre_doc}_${startOfDay.toISOString().slice(0, 10)}.csv`);
         // save the file...
         await workbook.xlsx.writeFile(filePath);
 

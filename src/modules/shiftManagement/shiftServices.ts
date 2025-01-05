@@ -13,9 +13,10 @@
 import { IDataReport, IConsulta, IAsignado, IShifts, ICitas, IConsultas, IConsultorio, IAsignados, IPacienteNoId, IPacienteCitado, IShiftsTicketData } from "../../interfaces/IShift";
 import { IUser } from "../../interfaces/IUser";
 import { formatDateTime } from "../../utils/timeUtils";
+import { incrementCode } from "../../utils/shiftUtils";
+import { wss } from "../../server";
 import prisma from "../../config/prismaClient";
 import logging from "../../config/logging";
-import { wss } from "../../server";
 
 /**
  * @method GET
@@ -389,12 +390,30 @@ const currentAssignatedPatient = async (id_doc: string, nombre_doc: string, apel
  */
 const newShift = async (citado: boolean, patien_data: IPacienteNoId | IPacienteCitado): Promise<{message: string, shiftData: IShiftsTicketData } | number> => {
     try {
+        const lastConsultation = await prisma.consulta.findFirst({
+            orderBy: {
+                create_at: 'desc'
+            },
+            select: {
+                turno: true
+            }
+        });
+
+        console.log("The last: ", lastConsultation);
+        let turno: string = patien_data.turno;
+
+        if(lastConsultation?.turno === patien_data.turno){
+            logging.info(`El ultimo turno y el nuevo son parecidos. \nNuevo: ${patien_data.turno} \nUltimo: ${lastConsultation.turno}`);
+
+            turno = incrementCode(patien_data.turno);
+        }
+
         const createdConsulta: IConsulta = await prisma.consulta.create({
             data: {
                 nombre_paciente: patien_data.nombre_paciente,
                 apellido_paciente: patien_data.apellido_paciente,
                 tipo_paciente: patien_data.tipo_paciente,
-                turno: patien_data.turno,
+                turno: turno,
                 citado: citado,
                 activo: true
             }

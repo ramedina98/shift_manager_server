@@ -14,9 +14,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.getCitadosAndConsulta = void 0;
 const timeUtils_1 = require("../../utils/timeUtils");
+const shiftUtils_1 = require("../../utils/shiftUtils");
+const server_1 = require("../../server");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const logging_1 = __importDefault(require("../../config/logging"));
-const server_1 = require("../../server");
 /**
  * @method GET
  *
@@ -350,12 +351,26 @@ exports.currentAssignatedPatient = currentAssignatedPatient;
  */
 const newShift = (citado, patien_data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
+        const lastConsultation = yield prismaClient_1.default.consulta.findFirst({
+            orderBy: {
+                create_at: 'desc'
+            },
+            select: {
+                turno: true
+            }
+        });
+        console.log("The last: ", lastConsultation);
+        let turno = patien_data.turno;
+        if ((lastConsultation === null || lastConsultation === void 0 ? void 0 : lastConsultation.turno) === patien_data.turno) {
+            logging_1.default.info(`El ultimo turno y el nuevo son parecidos. \nNuevo: ${patien_data.turno} \nUltimo: ${lastConsultation.turno}`);
+            turno = (0, shiftUtils_1.incrementCode)(patien_data.turno);
+        }
         const createdConsulta = yield prismaClient_1.default.consulta.create({
             data: {
                 nombre_paciente: patien_data.nombre_paciente,
                 apellido_paciente: patien_data.apellido_paciente,
                 tipo_paciente: patien_data.tipo_paciente,
-                turno: patien_data.turno,
+                turno: turno,
                 citado: citado,
                 activo: true
             }

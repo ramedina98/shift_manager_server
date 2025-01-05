@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -20,6 +43,8 @@ const logging_1 = __importDefault(require("../../config/logging"));
 const exceljs_1 = __importDefault(require("exceljs"));
 // import fs from "fs";
 const path_1 = __importDefault(require("path"));
+const os = __importStar(require("os"));
+const fs = __importStar(require("fs"));
 /**
  * @method GET
  *
@@ -204,9 +229,14 @@ const createCsvDailyReport = (id_doc, nombre_doc) => __awaiter(void 0, void 0, v
                 hora: horaFormatted
             });
         });
-        // TODO: definir aqui donde podría ser guardada esta información, para ser accedida facilmente por los administradores...
-        // define the path...
-        const filePath = path_1.default.join(__dirname, `Reporte_Diario_${nombre_doc}_${startOfDay.toISOString().slice(0, 10)}.xlsx`);
+        const desktopPath = path_1.default.join(os.homedir(), 'Desktop');
+        const reporteFolderPath = path_1.default.join(desktopPath, 'reportes');
+        // create the reporter folder if it does not exits...
+        if (!fs.existsSync(reporteFolderPath)) {
+            fs.mkdirSync(reporteFolderPath);
+            logging_1.default.info('Carpeta "reporte" creada en el escritorio.');
+        }
+        const filePath = path_1.default.join(reporteFolderPath, `/Reporte_Diario${nombre_doc}_${startOfDay.toISOString().slice(0, 10)}.csv`);
         // save the file...
         yield workbook.xlsx.writeFile(filePath);
         logging_1.default.info(`Reporte generado con éxito ${filePath}`);
