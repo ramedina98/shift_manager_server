@@ -437,6 +437,10 @@ exports.newShift = newShift;
  * @returns {string | number}
  */
 const removeRegistersAndCreateOneIntoReports = (id_doc, id_consulta, id_asignacion, dataReport) => __awaiter(void 0, void 0, void 0, function* () {
+    const lockAcquired = yield (0, redisLock_1.acquireLock)(config_1.SERVER.REDIS_LOCK_KEY, Number(config_1.SERVER.REDIS_LOCK_TIMEOUT), Number(config_1.SERVER.REDIS_RETRY_INTERVAL));
+    if (!lockAcquired) {
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
     try {
         // resolve all the async process...
         const [_asignacion, consulta, _reporte] = yield Promise.all([

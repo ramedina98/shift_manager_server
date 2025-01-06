@@ -486,6 +486,12 @@ const newShift = async (citado: boolean, patien_data: IPacienteNoId | IPacienteC
  * @returns {string | number}
  */
 const removeRegistersAndCreateOneIntoReports = async (id_doc: string, id_consulta: number, id_asignacion: string, dataReport: IDataReport): Promise<string> => {
+    const lockAcquired = await acquireLock(SERVER.REDIS_LOCK_KEY, Number(SERVER.REDIS_LOCK_TIMEOUT), Number(SERVER.REDIS_RETRY_INTERVAL));
+
+    if (!lockAcquired) {
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
+
     try {
         // resolve all the async process...
         const [_asignacion, consulta, _reporte] = await Promise.all([
