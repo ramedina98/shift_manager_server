@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.getCitadosAndConsulta = void 0;
 const timeUtils_1 = require("../../utils/timeUtils");
 const shiftUtils_1 = require("../../utils/shiftUtils");
+const config_1 = require("../../config/config");
+const redisLock_1 = require("../../config/redisLock");
 const server_1 = require("../../server");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const logging_1 = __importDefault(require("../../config/logging"));
@@ -206,6 +208,10 @@ const AssignedConsultation = (id_doc, id_consulta, nombre_paciente, consultorio,
  * @returns {Promise<IAsignados | number>} Shift information or a status code in case of an error.
  */
 const shiftAsignado = (id_doc, nombre_doc, apellido_doc) => __awaiter(void 0, void 0, void 0, function* () {
+    const lockAcquired = yield (0, redisLock_1.acquireLock)(config_1.SERVER.REDIS_LOCK_KEY, Number(config_1.SERVER.REDIS_LOCK_TIMEOUT), Number(config_1.SERVER.REDIS_RETRY_INTERVAL));
+    if (!lockAcquired) {
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
     try {
         const now = new Date();
         const nextHalfHour = new Date(now.getTime() + 30 * 60 * 1000); // Calculate 30 minutes ahead
@@ -286,6 +292,9 @@ const shiftAsignado = (id_doc, nombre_doc, apellido_doc) => __awaiter(void 0, vo
         logging_1.default.error(`Error in getShiftAsignado: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
+    finally {
+        yield (0, redisLock_1.releaseLock)(config_1.SERVER.REDIS_LOCK_KEY);
+    }
 });
 exports.shiftAsignado = shiftAsignado;
 /**
@@ -350,6 +359,10 @@ exports.currentAssignatedPatient = currentAssignatedPatient;
  * @returns {message}
  */
 const newShift = (citado, patien_data) => __awaiter(void 0, void 0, void 0, function* () {
+    const lockAquired = yield (0, redisLock_1.acquireLock)(config_1.SERVER.REDIS_LOCK_KEY, Number(config_1.SERVER.REDIS_LOCK_TIMEOUT), Number(config_1.SERVER.REDIS_RETRY_INTERVAL));
+    if (!lockAquired) {
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
     try {
         const lastConsultation = yield prismaClient_1.default.consulta.findFirst({
             orderBy: {
@@ -359,7 +372,6 @@ const newShift = (citado, patien_data) => __awaiter(void 0, void 0, void 0, func
                 turno: true
             }
         });
-        console.log("The last: ", lastConsultation);
         let turno = patien_data.turno;
         if ((lastConsultation === null || lastConsultation === void 0 ? void 0 : lastConsultation.turno) === patien_data.turno) {
             logging_1.default.info(`El ultimo turno y el nuevo son parecidos. \nNuevo: ${patien_data.turno} \nUltimo: ${lastConsultation.turno}`);
@@ -409,6 +421,9 @@ const newShift = (citado, patien_data) => __awaiter(void 0, void 0, void 0, func
         // Log and handle errors
         logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
+    }
+    finally {
+        yield (0, redisLock_1.releaseLock)(config_1.SERVER.REDIS_LOCK_KEY);
     }
 });
 exports.newShift = newShift;
