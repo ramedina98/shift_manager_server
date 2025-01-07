@@ -1,31 +1,22 @@
-/**
- * @module auth
- *
- * This file contains all the required controllers to handle all the process of the
- * auth module:
- *
- * 1. Register a new user
- * 2. Login
- * 3. Logout
- * 4. Forgot Password
- */
-import { Request, Response } from "express";
-import { IEmailUsername, ISissionData, IUser, IUserNoId } from "../../interfaces/IUser";
-import { IJwtsLogin } from "../../interfaces/IJwt";
-import { createCsvDailyReport } from "../users/usersServices";
-import { officeAssignment, removeAssignedOffice } from "../users/usersServices";
-import {
-    getUsers,
-    insertNewUser,
-    login,
-    logout,
-    deleteRefreshToken,
-    refreshToken,
-    recoverdPassword,
-    resetForgotenPassword
-} from "./authServices";
-import prisma from "../../config/prismaClient";
-
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resetForgotenPasswordController = exports.recoverdPasswordController = exports.refreshTokenController = exports.logoutController = exports.loginController = exports.insertNewUserController = exports.getUsersController = void 0;
+const usersServices_1 = require("../users/usersServices");
+const usersServices_2 = require("../users/usersServices");
+const authServices_1 = require("./authServices");
+const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 /**
  * @method GET
  *
@@ -36,28 +27,26 @@ import prisma from "../../config/prismaClient";
  *
  * @returns {IEmailUsername}
  */
-const getUsersController = async (_req: Request, res: Response): Promise<any> => {
+const getUsersController = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const usersAndEmails: IEmailUsername | number= await getUsers();
-
-        if(usersAndEmails === 400){
+        const usersAndEmails = yield (0, authServices_1.getUsers)();
+        if (usersAndEmails === 400) {
             return res.status(usersAndEmails).json({
                 message: 'Data not found.'
             });
         }
-
         return res.status(200).json({
             returnmessage: 'Data obtained successfully.',
             usersAndEmails
         });
-
-    } catch (error: any) {
+    }
+    catch (error) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
         });
     }
-}
-
+});
+exports.getUsersController = getUsersController;
 /**
  * @method POST
  *
@@ -66,40 +55,36 @@ const getUsersController = async (_req: Request, res: Response): Promise<any> =>
  * @param req.boyd {IuserNoId}
  * @returns {Response.json}
  */
-const insertNewUserController = async (req: Request, res: Response): Promise<any> => {
+const insertNewUserController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // destructuring the req.boyd to retrieve the user data...
-    const { new_user }: { new_user: IUserNoId } = req.body;
-
+    const { new_user } = req.body;
     // check if the data was provied...
-    if(!new_user){
+    if (!new_user) {
         return res.status(422).json({
             message: 'Data no provied.'
         });
     }
-
     try {
         // send the data to the services to start the process of storage them...
-        const result: string | number = await insertNewUser(new_user);
-
+        const result = yield (0, authServices_1.insertNewUser)(new_user);
         // if the return is 200, that means that the user has an acount...
-        if(result === 406){
+        if (result === 406) {
             return res.status(result).json({
                 message: 'Ya tienes una cuenta activa.'
             });
         }
-
         // response with a message of success...
         return res.status(201).json({
             message: result
         });
-
-    } catch (error: any) {
+    }
+    catch (error) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
         });
     }
-}
-
+});
+exports.insertNewUserController = insertNewUserController;
 /**
  * @method POST
  *
@@ -109,54 +94,45 @@ const insertNewUserController = async (req: Request, res: Response): Promise<any
  * @param req.body
  * @returns { Response.json }
  */
-const loginController = async (req: Request, res: Response): Promise<any> => {
+const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // deconstruting the req.body to retrieve the data...
-    const { session_data, num_consultorio }: { session_data: ISissionData, num_consultorio: number} = req.body;
-
+    const { session_data, num_consultorio } = req.body;
     // check if the data was sent or not...
-    if(!session_data){
+    if (!session_data) {
         return res.status(422).json({
             message: 'No credentials provied.'
         });
     }
-
     try {
         // first deconstruct the session_data object...
         const { user_name, password } = session_data;
-
         // send the data to the service...
-        const result: IJwtsLogin | number = await login(user_name, password);
-
+        const result = yield (0, authServices_1.login)(user_name, password);
         // handling the error codes (404, 401)
-        if(typeof result === 'number'){
+        if (typeof result === 'number') {
             let message = '';
-
-            if(result === 404){
-                message = 'Usuario incorrecto.'
-            } else if(result === 401){
-                message = 'Contraseña incorrecta.'
+            if (result === 404) {
+                message = 'Usuario incorrecto.';
             }
-
+            else if (result === 401) {
+                message = 'Contraseña incorrecta.';
+            }
             return res.status(result).json({
                 error: message
             });
-        } else{
-            const response: IUser | null = await prisma.users.findFirst({ where: { user_name } });
-
-            if(!response){
-                return res.status(404).json({ error: 'Usuario no encontrado. '});
+        }
+        else {
+            const response = yield prismaClient_1.default.users.findFirst({ where: { user_name } });
+            if (!response) {
+                return res.status(404).json({ error: 'Usuario no encontrado. ' });
             }
-
-            let id_asig_consul:  any;
-            if(response.type.toLowerCase() === 'medico') {
-                id_asig_consul = await officeAssignment(response.id_user, num_consultorio);
+            let id_asig_consul;
+            if (response.type.toLowerCase() === 'medico') {
+                id_asig_consul = yield (0, usersServices_2.officeAssignment)(response.id_user, num_consultorio);
             }
-
-            if(typeof id_asig_consul === 'number'){
-                return res.status(400).json({ error: 'Consultorio ocupado, verifique bien el numero de consultorio en el que esta.'})
+            if (typeof id_asig_consul === 'number') {
+                return res.status(400).json({ error: 'Consultorio ocupado, verifique bien el numero de consultorio en el que esta.' });
             }
-
-
             res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 24 * 60 * 60 * 1000 });
             res.status(200).json({
                 message: 'Inicio de sesión exitoso',
@@ -164,143 +140,130 @@ const loginController = async (req: Request, res: Response): Promise<any> => {
                 id_asig_consul
             });
         }
-
-    } catch (error: any) {
+    }
+    catch (error) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
-        })
+        });
     }
-}
-
+});
+exports.loginController = loginController;
 /**
  * @method POST
  *
  * This controller handle the insertion of tokens into the revokd_tokens table and the
  * logout...
  */
-const logoutController = async (req: Request, res: Response): Promise<any> => {
-    const authHeader: string | undefined = req.headers.authorization;
-    const token: string | undefined = authHeader && authHeader.split(' ')[1];
-    const reToken: string = req.cookies.refreshToken;
+const logoutController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+    const reToken = req.cookies.refreshToken;
     const user_data = req.user;
-    const {id_asig_consul}: {id_asig_consul: string | undefined} = req.body;
-
-    if(token === undefined){
+    const { id_asig_consul } = req.body;
+    if (token === undefined) {
         return res.status(401).json({
             message: 'Token no provied.'
         });
     }
-
-    if(!reToken){
-        return res.status(404).json({ message: 'Refresh token not provided.'});
+    if (!reToken) {
+        return res.status(404).json({ message: 'Refresh token not provided.' });
     }
-
     try {
         // logout service...
-        const result: number = await logout(token);
+        const result = yield (0, authServices_1.logout)(token);
         // delete the refresh token from the refresh_tokens table...
-        await deleteRefreshToken(reToken);
-
-        if(result === 400){
+        yield (0, authServices_1.deleteRefreshToken)(reToken);
+        if (result === 400) {
             return res.status(result).json({
                 error: 'Token expirado o incorrecto.'
             });
         }
-
         // create the csv reporte...
-        await createCsvDailyReport(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
-        if(id_asig_consul && id_asig_consul !== 'undefined'){
+        yield (0, usersServices_1.createCsvDailyReport)(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
+        if (id_asig_consul && id_asig_consul !== 'undefined') {
             // delete de assigned_office register...
-            await removeAssignedOffice(id_asig_consul);
+            yield (0, usersServices_2.removeAssignedOffice)(id_asig_consul);
         }
-
         // clean the cooki of refresh token...
         res.clearCookie('refreshToken');
         res.status(result).json({
             message: 'Cerrando sesión.'
         });
-
-    } catch (error: any) {
+    }
+    catch (error) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
-        })
+        });
     }
-}
-
+});
+exports.logoutController = logoutController;
 /**
  * @method POST
  *
  * This controller hendle the process of create a new access token using the
  * refresh token to validate the user...
  */
-const refreshTokenController = async (req: Request, res: Response): Promise<any> => {
-    const reToken: string = req.cookies.refreshToken;
-
+const refreshTokenController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const reToken = req.cookies.refreshToken;
     // check if the token has been providing...
-    if(!reToken) return res.status(401).json({ message: 'Token no provided.' });
-
+    if (!reToken)
+        return res.status(401).json({ message: 'Token no provided.' });
     try {
         // start the process of the new access token...
-        const result: string | number = await refreshToken(reToken);
-
-        if(typeof result === 'number'){
-            let message: string = '';
-
-            if(result === 404){
+        const result = yield (0, authServices_1.refreshToken)(reToken);
+        if (typeof result === 'number') {
+            let message = '';
+            if (result === 404) {
                 message = 'El token no es valido o ha sido revocado.';
-            } else if(result === 403){
+            }
+            else if (result === 403) {
                 message = 'Error decoding the JWT.';
             }
-
             return res.status(result).json({ message });
         }
-
         return res.status(201).json({
             message: 'Token creado con exito.',
             token: result
         });
-    } catch (error: any) {
+    }
+    catch (error) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
         });
     }
-}
-
+});
+exports.refreshTokenController = refreshTokenController;
 /**
  * @method POST
  *
  * This controller handles the process of send an email with a token to recover the password forgoten...
  */
-const recoverdPasswordController = async (req: Request, res: Response): Promise<any> => {
+const recoverdPasswordController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // decunstructing the req.body to retrieve the user_name...
-    const { user_name }: { user_name: string } = req.body;
-
-    if(!user_name){
+    const { user_name } = req.body;
+    if (!user_name) {
         return res.status(404).json({
             message: 'Data no provied.'
         });
     }
-
     try {
-        const result: string | number = await recoverdPassword(user_name);
-
-        if(result === 422){
+        const result = yield (0, authServices_1.recoverdPassword)(user_name);
+        if (result === 422) {
             return res.status(result).json({
                 message: `El usuario "${user_name}" no fu encontrado.`
             });
         }
-
         return res.status(200).json({
             message: result
         });
-
-    } catch (error: any) {
+    }
+    catch (error) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
         });
     }
-}
-
+});
+exports.recoverdPasswordController = recoverdPasswordController;
 /**
  * @method PUT
  *
@@ -309,36 +272,31 @@ const recoverdPasswordController = async (req: Request, res: Response): Promise<
  * @param req.body
  * @returns res.json()
  */
-const resetForgotenPasswordController = async (req: Request, res: Response): Promise<any> => {
+const resetForgotenPasswordController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // deconstruting the req.body to retrieve the token and the new Password...
-    const { token, newPass }: { token: string, newPass: string } = req.body;
-
-    if(!token || !newPass){
+    const { token, newPass } = req.body;
+    if (!token || !newPass) {
         return res.status(404).json({
             message: 'Token or password not provied.',
             token,
             newPass
         });
     }
-
     try {
-        const result: string | number = await resetForgotenPassword(token, newPass);
-
-        if(result === 400){
+        const result = yield (0, authServices_1.resetForgotenPassword)(token, newPass);
+        if (result === 400) {
             return res.status(400).json({
                 message: 'Token expirado o usuario incorrecto'
             });
         }
-
         return res.status(200).json({
             message: result
         });
-
-    } catch (error: any) {
+    }
+    catch (error) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
-        })
+        });
     }
-}
-
-export { getUsersController, insertNewUserController, loginController, logoutController, refreshTokenController, recoverdPasswordController, resetForgotenPasswordController };
+});
+exports.resetForgotenPasswordController = resetForgotenPasswordController;

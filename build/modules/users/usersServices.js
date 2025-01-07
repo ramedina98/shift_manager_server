@@ -1,21 +1,50 @@
-/**
- * @module users
- *
- * This file contains all the require services to handle all endpoints of the users module,
- * to obtain data of a specific user or to be able to update information...
- */
-import { IUser, INoUserIdandPasswordRequired, INoUserIdPasswordandFotoRequired, IUserPasswords, Iasignacion_consultorio, IDoctosList } from "../../interfaces/IUser";
-import { IConsultorio, IReport } from "../../interfaces/IShift";
-import { todaysDate } from "../../utils/timeUtils";
-import prisma from "../../config/prismaClient";
-import bcrypt from 'bcrypt';
-import logging from "../../config/logging";
-import ExcelJS from 'exceljs';
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getAllDoctors = exports.removeAssignedOffice = exports.updateAssignedOffice = exports.officeAssignment = exports.createCsvDailyReport = exports.updatePassword = exports.updateUser = exports.getUser = void 0;
+const timeUtils_1 = require("../../utils/timeUtils");
+const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const logging_1 = __importDefault(require("../../config/logging"));
+const exceljs_1 = __importDefault(require("exceljs"));
 // import fs from "fs";
-import path from "path";
-import * as os from "os";
-import * as fs from "fs";
-
+const path_1 = __importDefault(require("path"));
+const os = __importStar(require("os"));
+const fs = __importStar(require("fs"));
 /**
  * @method GET
  *
@@ -27,23 +56,21 @@ import * as fs from "fs";
  * @param token
  * @returns message of success
  */
-const getUser = async (id_user: string): Promise<INoUserIdandPasswordRequired | number> => {
+const getUser = (id_user) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // find the user in the database by user ID...
-        const user: IUser | null = await prisma.users.findFirst({
+        const user = yield prismaClient_1.default.users.findFirst({
             where: {
                 id_user
             }
         });
-
         // if user not found, return a 404 error...
-        if(!user){
-            logging.error('User not found.');
+        if (!user) {
+            logging_1.default.error('User not found.');
             return 404;
         }
-
         // create a response object excluding ID and Password fields...
-        const userResponse: INoUserIdandPasswordRequired = {
+        const userResponse = {
             nombre1: user.nombre1,
             nombre2: user.nombre2,
             apellido1: user.apellido1,
@@ -51,15 +78,15 @@ const getUser = async (id_user: string): Promise<INoUserIdandPasswordRequired | 
             email: user.email,
             user_name: user.user_name,
             type: user.type
-        }
-
+        };
         return userResponse;
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.getUser = getUser;
 /**
  * @method PUT
  *
@@ -72,23 +99,22 @@ const getUser = async (id_user: string): Promise<INoUserIdandPasswordRequired | 
  * @param { id_user, data, password }
  * @returns NextResponse
  */
-const updateUser = async (id_user: string, data: INoUserIdPasswordandFotoRequired): Promise<string | number> => {
+const updateUser = (id_user, data) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // second: search for the user and check if the password is correct...
-        const user: IUser | null = await prisma.users.findFirst({
+        const user = yield prismaClient_1.default.users.findFirst({
             where: { id_user }
         });
         // if for a some strange reason it is not found, let the user know...
-        if(!user){
-            logging.warning('User not found.');
+        if (!user) {
+            logging_1.default.warning('User not found.');
             return 404;
         }
-
         /**
          * Then, if the password is correct the following step...
          * Third: update the data in the db..
          */
-        const userResponse: IUser = await prisma.users.update({
+        const userResponse = yield prismaClient_1.default.users.update({
             where: { id_user },
             data: {
                 nombre1: data.nombre1,
@@ -99,16 +125,15 @@ const updateUser = async (id_user: string, data: INoUserIdPasswordandFotoRequire
                 user_name: data.user_name,
             }
         });
-
         // return a message of success...
         return `${userResponse.nombre1} ${userResponse.apellido1} sus datos han sido actualizados correctamente.`;
-
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.updateUser = updateUser;
 /**
  * @method PUT
  *
@@ -118,43 +143,39 @@ const updateUser = async (id_user: string, data: INoUserIdPasswordandFotoRequire
  * @param request { token, passwords{} }
  * @returns NextResponse
  */
-const updatePassword = async (id_user: string, passwords: IUserPasswords): Promise<string | number> => {
+const updatePassword = (id_user, passwords) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // looking for the user...
-        const user: IUser | null = await prisma.users.findFirst({
+        const user = yield prismaClient_1.default.users.findFirst({
             where: { id_user }
         });
-
         // if there is not exist the user return a message...
-        if(!user){
-            logging.error('User not found.');
+        if (!user) {
+            logging_1.default.error('User not found.');
             return 404;
         }
-
         // compare the received password with the password in the db...
-        const isValidPassword: boolean = await bcrypt.compare(passwords.oldPass, user.password);
+        const isValidPassword = yield bcrypt_1.default.compare(passwords.oldPass, user.password);
         // if the password is wrong, return a message...
-        if(!isValidPassword){
-            logging.error('Contraseña incorrecta.');
+        if (!isValidPassword) {
+            logging_1.default.error('Contraseña incorrecta.');
             return 401;
         }
-
         // if the password is correct, change the password in the data base with the new one...
-        const hashedPassword: string = await bcrypt.hash(passwords.newPass, 10);
-        await prisma.users.update({
+        const hashedPassword = yield bcrypt_1.default.hash(passwords.newPass, 10);
+        yield prismaClient_1.default.users.update({
             where: { id_user },
             data: { password: hashedPassword }
         });
-
         // a message of success...
-        return `${user.nombre1} ${user.apellido1} contraseña actualizada correctamente.`
-
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+        return `${user.nombre1} ${user.apellido1} contraseña actualizada correctamente.`;
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.updatePassword = updatePassword;
 /**
  * @method POST
  *
@@ -163,12 +184,11 @@ const updatePassword = async (id_user: string, passwords: IUserPasswords): Promi
  * @param {id_doc}
  * @returns {excel}
  */
-const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise<any> => {
+const createCsvDailyReport = (id_doc, nombre_doc) => __awaiter(void 0, void 0, void 0, function* () {
     //obtaint the time range of the present day...
-    const { startOfDay, endOfDay } = todaysDate();
-
+    const { startOfDay, endOfDay } = (0, timeUtils_1.todaysDate)();
     try {
-        const reportes: IReport [] | null = await prisma.reporte.findMany({
+        const reportes = yield prismaClient_1.default.reporte.findMany({
             where: {
                 doctor: id_doc,
                 fecha_hora: {
@@ -177,16 +197,13 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
                 }
             }
         });
-
-        if(reportes.length === 0){
-            logging.warning('No hay elementos para generar un reporte del día en curso.');
+        if (reportes.length === 0) {
+            logging_1.default.warning('No hay elementos para generar un reporte del día en curso.');
             return [];
         }
-
         // create a new excel book...
-        const workbook = new ExcelJS.Workbook();
+        const workbook = new exceljs_1.default.Workbook();
         const workSheet = workbook.addWorksheet('Reporte Diario');
-
         // headers...
         workSheet.columns = [
             { header: 'Doctor', key: 'nombre_doc', width: 20 },
@@ -197,13 +214,11 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
             { header: 'Fecha', key: 'fecha', width: 15 },
             { header: 'Hora', key: 'hora', width: 15 }
         ];
-
         // add rows...
         reportes.forEach((reporte) => {
             const fecha = new Date(reporte.fecha_hora);
             const fechaFormatted = fecha.toLocaleDateString();
             const horaFormatted = fecha.toLocaleTimeString();
-
             workSheet.addRow({
                 nombre_doc: nombre_doc,
                 consultorio: reporte.consultorio,
@@ -214,27 +229,24 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
                 hora: horaFormatted
             });
         });
-
-        const desktopPath = path.join(os.homedir(), 'Desktop');
-        const reporteFolderPath = path.join(desktopPath, 'reportes');
-
+        const desktopPath = path_1.default.join(os.homedir(), 'Desktop');
+        const reporteFolderPath = path_1.default.join(desktopPath, 'reportes');
         // create the reporter folder if it does not exits...
-        if(!fs.existsSync(reporteFolderPath)){
+        if (!fs.existsSync(reporteFolderPath)) {
             fs.mkdirSync(reporteFolderPath);
-            logging.info('Carpeta "reporte" creada en el escritorio.');
+            logging_1.default.info('Carpeta "reporte" creada en el escritorio.');
         }
-
-        const filePath = path.join(reporteFolderPath, `/Reporte_Diario${nombre_doc}_${startOfDay.toISOString().slice(0, 10)}.csv`);
+        const filePath = path_1.default.join(reporteFolderPath, `/Reporte_Diario${nombre_doc}_${startOfDay.toISOString().slice(0, 10)}.csv`);
         // save the file...
-        await workbook.xlsx.writeFile(filePath);
-
-        logging.info(`Reporte generado con éxito ${filePath}`);
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+        yield workbook.xlsx.writeFile(filePath);
+        logging_1.default.info(`Reporte generado con éxito ${filePath}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.createCsvDailyReport = createCsvDailyReport;
 /**
  * @method POST
  *
@@ -245,37 +257,35 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
  * @param {id_doc}
  * @returns {string}
  */
-const officeAssignment = async (id_doc: string, num_consultorio: number): Promise<string | number> => {
+const officeAssignment = (id_doc, num_consultorio) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // check that the offices is already available...
-        const emptyOffice: Iasignacion_consultorio | null = await prisma.asignacion_consultorio.findFirst({
+        const emptyOffice = yield prismaClient_1.default.asignacion_consultorio.findFirst({
             where: {
                 num_consultorio
             }
         });
-
-        if(emptyOffice !== null){
-            if(emptyOffice.id_doc === id_doc){
+        if (emptyOffice !== null) {
+            if (emptyOffice.id_doc === id_doc) {
                 return emptyOffice.id_asignacion;
             }
             return 201;
         }
-
         // CREATE REGISTER...
-        const response = await prisma.asignacion_consultorio.create({
+        const response = yield prismaClient_1.default.asignacion_consultorio.create({
             data: {
                 id_doc,
                 num_consultorio,
             }
         });
-
         return response.id_asignacion;
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.officeAssignment = officeAssignment;
 /**
  * @method PUT
  * this service helps me to update the  assigned office, if it is required...
@@ -283,22 +293,20 @@ const officeAssignment = async (id_doc: string, num_consultorio: number): Promis
  * @param {id_asign_consu, num_consultorio}
  * @returns {string}
  */
-const updateAssignedOffice = async (id_asign_consu: string, num_consultorio: number): Promise<string | number> => {
+const updateAssignedOffice = (id_asign_consu, num_consultorio) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // check if the num_consultorio is difernt...
-        const consultorio: IConsultorio | null = await prisma.asignacion_consultorio.findFirst({
+        const consultorio = yield prismaClient_1.default.asignacion_consultorio.findFirst({
             where: {
                 id_asignacion: id_asign_consu,
                 num_consultorio: num_consultorio
             }
         });
-
-        if(consultorio){
-            logging.warning('El numero de consultorio no fue cambiado.');
+        if (consultorio) {
+            logging_1.default.warning('El numero de consultorio no fue cambiado.');
             return 200;
         }
-
-        const response: Iasignacion_consultorio | null = await prisma.asignacion_consultorio.update({
+        const response = yield prismaClient_1.default.asignacion_consultorio.update({
             where: {
                 id_asignacion: id_asign_consu
             },
@@ -306,34 +314,35 @@ const updateAssignedOffice = async (id_asign_consu: string, num_consultorio: num
                 num_consultorio: num_consultorio
             }
         });
-
         return `Consultorio actualizado. (${response.num_consultorio})`;
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.updateAssignedOffice = updateAssignedOffice;
 /**
  * @method DELETE
  *
  * This services works with the logout controller to remove and specific record in the asignacion consultorio table...
  * @param {id_doc}
  */
-const removeAssignedOffice = async (id_asig_consul: string): Promise<void> => {
+const removeAssignedOffice = (id_asig_consul) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        await prisma.asignacion_consultorio.delete({
+        yield prismaClient_1.default.asignacion_consultorio.delete({
             where: {
                 id_asignacion: id_asig_consul
             }
         });
-        logging.info('Registro borrado.');
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+        logging_1.default.info('Registro borrado.');
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.removeAssignedOffice = removeAssignedOffice;
 /**
  * @method GET
  *
@@ -341,32 +350,29 @@ const removeAssignedOffice = async (id_asig_consul: string): Promise<void> => {
  *
  * @returns {doctors[]}
  */
-const getAllDoctors = async (): Promise<IDoctosList[] | number> => {
+const getAllDoctors = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const response: IUser[] | null = await prisma.users.findMany({
+        const response = yield prismaClient_1.default.users.findMany({
             where: {
                 type: 'Medico'
             }
         });
-
-        if(response === null || response.length === 0){
-            logging.warning('No se encontro registro.');
+        if (response === null || response.length === 0) {
+            logging_1.default.warning('No se encontro registro.');
             return 404;
         }
-
-        const data: IDoctosList[] = response.map((doc) => {
+        const data = response.map((doc) => {
             return {
                 id_doc: doc.id_user,
                 nombre_doc: doc.nombre1,
                 apellido_doc: doc.apellido1
-            }
+            };
         });
-
         return data;
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
-export { getUser, updateUser, updatePassword, createCsvDailyReport, officeAssignment, updateAssignedOffice, removeAssignedOffice, getAllDoctors };
+});
+exports.getAllDoctors = getAllDoctors;

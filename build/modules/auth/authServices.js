@@ -1,3 +1,18 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resetForgotenPassword = exports.recoverdPassword = exports.refreshToken = exports.deleteRefreshToken = exports.logout = exports.login = exports.insertNewUser = exports.checkIfTokenIsRevoked = exports.getUsers = void 0;
 /**
  * @module auth
  *
@@ -8,17 +23,15 @@
  * 3. logout
  * 4. forgotpassword
  */
-import { IUser, IUserNoId, IEmailUsername, UserDataFields } from "../../interfaces/IUser";
-import { token, generateRefreshToken, recoveryToken, extractUserInfo } from "../../utils/authUtils";
-import { IJwtsLogin, IRefreshTokens } from "../../interfaces/IJwt";
-import { secureEmailtoShow } from "../../helpers/emailFormatHelpers";
-import { SERVER } from "../../config/config";
-import EmailHandler from "../../classes/EmialHandler";
-import prisma from "../../config/prismaClient";
-import bcrypt from 'bcrypt';
-import logging from "../../config/logging";
-import jwt from "jsonwebtoken";
-
+const IUser_1 = require("../../interfaces/IUser");
+const authUtils_1 = require("../../utils/authUtils");
+const emailFormatHelpers_1 = require("../../helpers/emailFormatHelpers");
+const config_1 = require("../../config/config");
+const EmialHandler_1 = __importDefault(require("../../classes/EmialHandler"));
+const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
+const logging_1 = __importDefault(require("../../config/logging"));
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 /**
  * @method GET
  *
@@ -27,34 +40,31 @@ import jwt from "jsonwebtoken";
  *
  * @returns success message || error message...
  */
-const getUsers = async (): Promise<IEmailUsername | number> => {
+const getUsers = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // make the query to the database...
-        const user_result: IUser[] | null = await prisma.users.findMany();
-
+        const user_result = yield prismaClient_1.default.users.findMany();
         // create an array of just user_names...
-        const user_name: string[] = user_result?.map(user => user.user_name) || [];
+        const user_name = (user_result === null || user_result === void 0 ? void 0 : user_result.map(user => user.user_name)) || [];
         // create an array of just emails...
-        const email: string[] = user_result?.map(user => user.email) || [];
-
+        const email = (user_result === null || user_result === void 0 ? void 0 : user_result.map(user => user.email)) || [];
         // if there are not any username and email, return a number of error...
-        if(user_name.length === 0 && email.length === 0){
-            logging.warning('No data found.')
+        if (user_name.length === 0 && email.length === 0) {
+            logging_1.default.warning('No data found.');
             return 400;
         }
-
         // retorn the data...
         return {
             user_name,
             email
-        }
-
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+        };
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.getUsers = getUsers;
 /**
  * @method POST
  *
@@ -73,10 +83,9 @@ const getUsers = async (): Promise<IEmailUsername | number> => {
  * You have to keep this in mind: From the frontedn you have to validate that the user name and email
  * are not the same as an existing user name and email of another user..
  */
-const insertNewUser = async (new_user: IUserNoId): Promise<string | number> => {
-
+const insertNewUser = (new_user) => __awaiter(void 0, void 0, void 0, function* () {
     // first lets check if the user is not already registerd...
-    const userExist: IUser | null = await prisma.users.findFirst({
+    const userExist = yield prismaClient_1.default.users.findFirst({
         where: {
             nombre1: new_user.nombre1,
             nombre2: new_user.nombre2,
@@ -84,20 +93,17 @@ const insertNewUser = async (new_user: IUserNoId): Promise<string | number> => {
             apellido2: new_user.apellido2
         }
     });
-
     // if the user already exist, they can create a new user, let the client knows...
-    if(userExist){
-        logging.warning('She/he has an account');
+    if (userExist) {
+        logging_1.default.warning('She/he has an account');
         return 406;
     }
-
     // passwrod encryption...
-    const encryptedPassword: string = await bcrypt.hash(new_user.password, 10);
-
+    const encryptedPassword = yield bcrypt_1.default.hash(new_user.password, 10);
     // storage the data into the database...
     try {
         // storage the data and wait to get the register done...
-        const response: IUser = await prisma.users.create({
+        const response = yield prismaClient_1.default.users.create({
             data: {
                 nombre1: new_user.nombre1,
                 nombre2: new_user.nombre2,
@@ -109,16 +115,16 @@ const insertNewUser = async (new_user: IUserNoId): Promise<string | number> => {
                 type: new_user.type
             },
         });
-
         // send a json to the front...
-        return `${response.nombre1} ${response.apellido1} su registro a quedado exitosamente.`
-    } catch (error: any) {
+        return `${response.nombre1} ${response.apellido1} su registro a quedado exitosamente.`;
+    }
+    catch (error) {
         // handle errors...
-        logging.error(`Error: ${error.message}`);
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.insertNewUser = insertNewUser;
 /**
  * @method POST
  *
@@ -128,44 +134,40 @@ const insertNewUser = async (new_user: IUserNoId): Promise<string | number> => {
  * @param {password, user_name}
  * @returns jwt
  */
-const login = async (username: string, password: string): Promise<IJwtsLogin | number> => {
+const login = (username, password) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // make the query to search the user by its username...
-        const user: IUser | null = await prisma.users.findFirst({
+        const user = yield prismaClient_1.default.users.findFirst({
             where: {
                 user_name: username,
             },
         });
-
-        if(!user){
-            logging.error('User name incorrect.');
+        if (!user) {
+            logging_1.default.error('User name incorrect.');
             return 404;
         }
-
         // compare the hashed password...
-        const isPasswordValid: boolean = await bcrypt.compare(password, user.password);
-        if(!isPasswordValid){
-            logging.error('Password incorrect.');
+        const isPasswordValid = yield bcrypt_1.default.compare(password, user.password);
+        if (!isPasswordValid) {
+            logging_1.default.error('Password incorrect.');
             return 401;
         }
-
         // create the access token...
-        const accessToken: string = token(user, SERVER.JWT_TIME);
+        const accessToken = (0, authUtils_1.token)(user, config_1.SERVER.JWT_TIME);
         // create the refresh token...
-        const refreshToken: string = await generateRefreshToken(user);
-
+        const refreshToken = yield (0, authUtils_1.generateRefreshToken)(user);
         // send the response...
         return {
             accessToken,
             refreshToken
-        }
-
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+        };
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.login = login;
 /**
  * @method POST
  *
@@ -174,35 +176,31 @@ const login = async (username: string, password: string): Promise<IJwtsLogin | n
  *
  * @param token
  */
-const logout = async (token: string): Promise<number>=> {
+const logout = (token) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // decode the token to retrieve the id_user...
-        const decoded: string | null = extractUserInfo(token, UserDataFields.ID_USER);
-
-        if(decoded === null){
-            logging.warning('Token expirado o incorrecto.');
+        const decoded = (0, authUtils_1.extractUserInfo)(token, IUser_1.UserDataFields.ID_USER);
+        if (decoded === null) {
+            logging_1.default.warning('Token expirado o incorrecto.');
             return 400;
         }
-
-        const id_user: string = decoded;
-
+        const id_user = decoded;
         // insert the token into the revoked_tokens table...
-        await prisma.revoked_tokens.create({
+        yield prismaClient_1.default.revoked_tokens.create({
             data: {
                 token,
                 user_id: id_user
             },
         });
-
-        logging.info(`Token revocado.`);
-
+        logging_1.default.info(`Token revocado.`);
         return 201;
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.logout = logout;
 /**
  * @method GET
  *
@@ -211,15 +209,14 @@ const logout = async (token: string): Promise<number>=> {
  *
  * @param token
  */
-const checkIfTokenIsRevoked = async (token: string): Promise<boolean> => {
-    const revokedToken: any = await prisma.revoked_tokens.findFirst({
+const checkIfTokenIsRevoked = (token) => __awaiter(void 0, void 0, void 0, function* () {
+    const revokedToken = yield prismaClient_1.default.revoked_tokens.findFirst({
         where: { token },
     });
-
     // returns true if token has been revoked, false otherwise...
     return revokedToken !== null;
-}
-
+});
+exports.checkIfTokenIsRevoked = checkIfTokenIsRevoked;
 /**
  * @method DELETE
  *
@@ -228,62 +225,57 @@ const checkIfTokenIsRevoked = async (token: string): Promise<boolean> => {
  *
  * @param token
  */
-const deleteRefreshToken = async (token: string): Promise<void> => {
+const deleteRefreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // first, looking for the token register...
-        const token_record: IRefreshTokens | null = await prisma.refresh_tokens.findFirst({
+        const token_record = yield prismaClient_1.default.refresh_tokens.findFirst({
             where: { token: token }
         });
-
-        if(token_record === null) throw new Error("Refresh token does not exist.");
-
+        if (token_record === null)
+            throw new Error("Refresh token does not exist.");
         // eliminate the token...
-        await prisma.refresh_tokens.delete({
-            where: {id: token_record.id }
+        yield prismaClient_1.default.refresh_tokens.delete({
+            where: { id: token_record.id }
         });
-
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.deleteRefreshToken = deleteRefreshToken;
 /**
  * @method POST
  *
  * This service handle the process to renew the sesion token...
  */
-const refreshToken = async (reToken: string): Promise<string| number> => {
+const refreshToken = (reToken) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // search the token in the table...
-        const storedToken: IRefreshTokens | null = await prisma.refresh_tokens.findFirst({
+        const storedToken = yield prismaClient_1.default.refresh_tokens.findFirst({
             where: { token: reToken }
         });
-
-        if(!storedToken){
-            logging.warning('El token no es valido o ha sido revocado.');
+        if (!storedToken) {
+            logging_1.default.warning('El token no es valido o ha sido revocado.');
             return 404;
         }
-
         // extract the user data from the refresh token...
-        const user_data: any = jwt.verify(reToken, SERVER.JWT_KEY);
-
-        if(!user_data){
-            logging.error('Error decoding the JWT.');
+        const user_data = jsonwebtoken_1.default.verify(reToken, config_1.SERVER.JWT_KEY);
+        if (!user_data) {
+            logging_1.default.error('Error decoding the JWT.');
             return 403;
         }
-
         // Create a new token access...
-        const newAccessToken: string = token(user_data, SERVER.JWT_TIME);
-
+        const newAccessToken = (0, authUtils_1.token)(user_data, config_1.SERVER.JWT_TIME);
         // return the token...
         return newAccessToken;
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.mesage}`);
     }
-}
-
+});
+exports.refreshToken = refreshToken;
 /**
  * @method POST
  *
@@ -292,23 +284,20 @@ const refreshToken = async (reToken: string): Promise<string| number> => {
  *
  * @param user_name
  */
-const recoverdPassword = async (user_name: string): Promise<string | number> => {
+const recoverdPassword = (user_name) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user: IUser | null = await prisma.users.findFirst({
+        const user = yield prismaClient_1.default.users.findFirst({
             where: {
                 user_name
             }
         });
-
         // if the user does not exist let the client knows...
-        if(!user){
-            logging.warning('Usuario no encontrado');
+        if (!user) {
+            logging_1.default.warning('Usuario no encontrado');
             return 422;
         }
-
         // create the token...
-        const token: string = recoveryToken(user.id_user);
-
+        const token = (0, authUtils_1.recoveryToken)(user.id_user);
         let subject = 'Recuperación de contraseña - Hospital San Jose, de los ojos.';
         // Mensaje padre
         let message = `
@@ -366,15 +355,12 @@ const recoverdPassword = async (user_name: string): Promise<string | number> => 
             </body>
             </html>
         `;
-
         try {
-            const email = new EmailHandler(user.email, subject, message);
+            const email = new EmialHandler_1.default(user.email, subject, message);
             // send the message...
-            await email.emailSending();
-
+            yield email.emailSending();
             // format the email to display it in safe mode...
-            const formattedEmail: string | number = secureEmailtoShow(user.email);
-
+            const formattedEmail = (0, emailFormatHelpers_1.secureEmailtoShow)(user.email);
             /**
              * we check what was the type of answer, if it was 1 a diferent mesage is assigned to
              * the one that could be if we get a string...
@@ -382,20 +368,20 @@ const recoverdPassword = async (user_name: string): Promise<string | number> => 
             const ms = formattedEmail === 1
                 ? `${user.user_name}, se le ha enviado un código de recuperación a su email registrado.`
                 : `${user.user_name}, se le ha mandado a su correo ${formattedEmail} un código de verificación.`;
-
             // return the message...
             return ms;
-
-        } catch (error: any) {
-            logging.error(`Error: ${error.message}`);
+        }
+        catch (error) {
+            logging_1.default.error(`Error: ${error.message}`);
             throw new Error(`Error: ${error.message}`);
         }
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
+});
+exports.recoverdPassword = recoverdPassword;
 /**
  * @method PUT
  *
@@ -403,50 +389,30 @@ const recoverdPassword = async (user_name: string): Promise<string | number> => 
  *
  * @param { Token, newPassword }
  */
-const resetForgotenPassword = async (token: string, newPass: string): Promise<string | number> => {
+const resetForgotenPassword = (token, newPass) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // decode the token...
-        const decoded: string | null = extractUserInfo(token, UserDataFields.ID_USER);
-
-        if(decoded === null){
-            logging.warning('Token expirado o usuario incorrecto')
+        const decoded = (0, authUtils_1.extractUserInfo)(token, IUser_1.UserDataFields.ID_USER);
+        if (decoded === null) {
+            logging_1.default.warning('Token expirado o usuario incorrecto');
             return 400;
         }
-
         // extract the id...
-        const id: string = decoded;
+        const id = decoded;
         // process the new password...
-        const hashedPassword: string = await bcrypt.hash(newPass, 10);
-
+        const hashedPassword = yield bcrypt_1.default.hash(newPass, 10);
         // update the password in the database...
-        await prisma.users.update({
+        yield prismaClient_1.default.users.update({
             where: { id_user: id },
             data: { password: hashedPassword }
         });
-
         // mark token as expired when setting inmediate expiration...
-        jwt.sign(
-            { id_user: id},
-            SERVER.JWT_KEY,
-            { expiresIn: '1S' }
-        );
-
-        return 'Su contraseña a sido actualizada correctamente.'
-
-    } catch (error: any) {
-        logging.error(`Error: ${error.message}`);
+        jsonwebtoken_1.default.sign({ id_user: id }, config_1.SERVER.JWT_KEY, { expiresIn: '1S' });
+        return 'Su contraseña a sido actualizada correctamente.';
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
     }
-}
-
-export {
-    getUsers,
-    checkIfTokenIsRevoked,
-    insertNewUser,
-    login,
-    logout,
-    deleteRefreshToken,
-    refreshToken,
-    recoverdPassword,
-    resetForgotenPassword
-};
+});
+exports.resetForgotenPassword = resetForgotenPassword;

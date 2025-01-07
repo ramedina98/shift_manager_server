@@ -15,7 +15,7 @@ import allRoutes from './index_routes';
 const app = express();
 // use cors...
 const corsOptions = {
-    origin: SERVER.FRONT_SERVER,
+    origin: [SERVER.FRONT_SERVER, SERVER.FRONT_SERVER2],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

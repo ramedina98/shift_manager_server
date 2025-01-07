@@ -18,5 +18,12 @@ export const SERVER = {
     EHOST: process.env.PUBLIC_HOST!,
     EUSER: process.env.PUBLIC_USER!,
     EPASS: process.env.PUBLIC_PASS!,
-    FRONT_SERVER: process.env.FRONTEND_SERVER!
+    FRONT_SERVER: process.env.FRONTEND_SERVER1!,
+    FRONT_SERVER2: process.env.FRONTEND_SERVER2!,
+    //REDIS ENVIROMENT VARIABLES...
+    REDIS_LOCK_KEY: process.env.LOCK_KEY!,
+    REDIS_LOCK_TIMEOUT: process.env.LOCK_TIMEOUT_MS!,
+    REDIS_RETRY_INTERVAL: process.env.RETRY_INTERVAL_MS!,
+    // REDIS CONECTION VARIABLES...
+    RURL: process.env.REDIS_URL!,
 };

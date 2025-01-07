@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id_user     String                    @id @default(cuid())
+  nombre1     String
+  nombre2     String
+  apellido1   String
+  apellido2   String
+  email       String                    @unique
+  user_name   String                    @unique
+  password    String                    // Equivalente a BLOB en MySQL
+  type        String                    // "medico" - "cajero"
+}
+
+model consultorio {
+  id_consultorio     Int     @id @default(autoincrement())
+  numero_consultorio Int
+}
+
+model asignacion_consultorio {
+  id_asignacion      String        @id @default(cuid())
+  id_doc             String
+  num_consultorio     Int
+  fecha              DateTime @default(now())
+}
+model consulta {
+  id_consulta    Int     @id @default(autoincrement())
+  nombre_paciente String // solo el primer nombre...
+  apellido_paciente String // apellido paterno...
+  tipo_paciente  String  // "primera vez" / "subsecuente"
+  turno String
+  citado         Boolean
+  activo         Boolean // "en espera" / "consultado"
+  create_at DateTime @default(now())
+}
+
+model citados {
+  id_cita        String  @id @default(cuid())
+  id_consulta    Int @unique
+  id_doc         String
+  hora_cita DateTime
+  create_at DateTime @default(now())
+}
+
+model asignacion {
+  id_asignacion  String   @id @default(cuid())
+  id_consulta    Int
+  id_doc         String
+  create_at DateTime @default(now())
+}
+
+model reporte {
+  id_reporte          Int       @id @default(autoincrement())
+  consultorio         Int
+  turno String
+  nombre_paciente String //
+  doctor String // id del doctor...
+  visita String // enum PRI - SEG - CIT
+  fecha_hora               DateTime  @default(now())
+}
+
+model revoked_tokens {
+  id Int @id @default(autoincrement())
+  token String @db.Text
+  user_id String
+  revoked_at DateTime @default(now())
+}
+
+model refresh_tokens {
+  id Int @id @default(autoincrement())
+  id_user String
+  token String @db.Text
+}

@@ -1,6 +1,5 @@
 /**
  * @module shiftManagement
- *TODO: checar web sockets, y primer service (asignaciones)...
  * This file contains all the required servies to handle all the routes of the endpoint
  * shif creator...
  *
@@ -13,9 +12,13 @@
 import { IDataReport, IConsulta, IAsignado, IShifts, ICitas, IConsultas, IConsultorio, IAsignados, IPacienteNoId, IPacienteCitado, IShiftsTicketData } from "../../interfaces/IShift";
 import { IUser } from "../../interfaces/IUser";
 import { formatDateTime } from "../../utils/timeUtils";
+import { incrementCode } from "../../utils/shiftUtils";
+import { SERVER } from "../../config/config";
+import { acquireLock, releaseLock } from "../../config/redisLock";
+import { wss } from "../../server";
 import prisma from "../../config/prismaClient";
 import logging from "../../config/logging";
-import wss from "../../webSocketServer";
+
 
 /**
  * @method GET
@@ -194,6 +197,16 @@ const AssignedConsultation = async (id_doc: string, id_consulta: number, nombre_
             }
         });
 
+        // when the assignment is done, we deactivate the patient...
+        await prisma.consulta.update({
+            where: {
+                id_consulta: id_consulta,
+            },
+            data: {
+                activo: false,
+            }
+        });
+
         const title: string = `Turno ${turno}`;
         const message: string = `${nombre_paciente} pase con Dr. ${nombre_doc}, consultorio ${consultorio}`;
         await webSocketMessage(title, message, null, 1);
@@ -217,6 +230,12 @@ const AssignedConsultation = async (id_doc: string, id_consulta: number, nombre_
  * @returns {Promise<IAsignados | number>} Shift information or a status code in case of an error.
  */
 const shiftAsignado = async (id_doc: string, nombre_doc: string, apellido_doc: string): Promise<IAsignados | number> => {
+    const lockAcquired = await acquireLock(SERVER.REDIS_LOCK_KEY, Number(SERVER.REDIS_LOCK_TIMEOUT), Number(SERVER.REDIS_RETRY_INTERVAL));
+
+    if (!lockAcquired) {
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
+
     try {
         const now = new Date();
         const nextHalfHour = new Date(now.getTime() + 30 * 60 * 1000); // Calculate 30 minutes ahead
@@ -291,16 +310,6 @@ const shiftAsignado = async (id_doc: string, nombre_doc: string, apellido_doc: s
         // patient assignment record...
         const id_asignacion: string = await AssignedConsultation(id_doc, nextPatient.id_consulta, `${nextPatient?.nombre_paciente} ${nextPatient?.apellido_paciente}`, consultorio?.num_consultorio, `${nombre_doc} ${apellido_doc}`, nextPatient?.turno);
 
-        // when the assignment is done, we deactivate the patient...
-        await prisma.consulta.update({
-            where: {
-                id_consulta: nextPatient.id_consulta,
-            },
-            data: {
-                activo: false,
-            }
-        });
-
         // Return formatted shift information
         return {
             id_consulta: nextPatient.id_consulta,
@@ -318,6 +327,8 @@ const shiftAsignado = async (id_doc: string, nombre_doc: string, apellido_doc: s
         // Log and handle errors
         logging.error(`Error in getShiftAsignado: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
+    } finally{
+        await releaseLock(SERVER.REDIS_LOCK_KEY);
     }
 };
 
@@ -388,13 +399,35 @@ const currentAssignatedPatient = async (id_doc: string, nombre_doc: string, apel
  * @returns {message}
  */
 const newShift = async (citado: boolean, patien_data: IPacienteNoId | IPacienteCitado): Promise<{message: string, shiftData: IShiftsTicketData } | number> => {
+    const lockAquired = await acquireLock(SERVER.REDIS_LOCK_KEY, Number(SERVER.REDIS_LOCK_TIMEOUT), Number(SERVER.REDIS_RETRY_INTERVAL));
+
+    if(!lockAquired){
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
+
     try {
+        const lastConsultation = await prisma.consulta.findFirst({
+            orderBy: {
+                create_at: 'desc'
+            },
+            select: {
+                turno: true
+            }
+        });
+
+        let turno: string = patien_data.turno;
+
+        if(lastConsultation?.turno === patien_data.turno){
+            logging.info(`El ultimo turno y el nuevo son parecidos. \nNuevo: ${patien_data.turno} \nUltimo: ${lastConsultation.turno}`);
+            turno = incrementCode(patien_data.turno);
+        }
+
         const createdConsulta: IConsulta = await prisma.consulta.create({
             data: {
                 nombre_paciente: patien_data.nombre_paciente,
                 apellido_paciente: patien_data.apellido_paciente,
                 tipo_paciente: patien_data.tipo_paciente,
-                turno: patien_data.turno,
+                turno: turno,
                 citado: citado,
                 activo: true
             }
@@ -436,6 +469,8 @@ const newShift = async (citado: boolean, patien_data: IPacienteNoId | IPacienteC
         // Log and handle errors
         logging.error(`Error: ${error.message}`);
         throw new Error(`Error: ${error.message}`);
+    } finally{
+        await releaseLock(SERVER.REDIS_LOCK_KEY);
     }
 }
 
@@ -451,6 +486,12 @@ const newShift = async (citado: boolean, patien_data: IPacienteNoId | IPacienteC
  * @returns {string | number}
  */
 const removeRegistersAndCreateOneIntoReports = async (id_doc: string, id_consulta: number, id_asignacion: string, dataReport: IDataReport): Promise<string> => {
+    const lockAcquired = await acquireLock(SERVER.REDIS_LOCK_KEY, Number(SERVER.REDIS_LOCK_TIMEOUT), Number(SERVER.REDIS_RETRY_INTERVAL));
+
+    if (!lockAcquired) {
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
+
     try {
         // resolve all the async process...
         const [_asignacion, consulta, _reporte] = await Promise.all([
