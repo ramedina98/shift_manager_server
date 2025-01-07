@@ -12,7 +12,7 @@
 import { Request, Response } from "express";
 import { IEmailUsername, ISissionData, IUser, IUserNoId } from "../../interfaces/IUser";
 import { IJwtsLogin } from "../../interfaces/IJwt";
-import { createCsvDailyReport } from "../users/usersServices";
+// TODO: import { createCsvDailyReport } from "../users/usersServices";
 import { officeAssignment, removeAssignedOffice } from "../users/usersServices";
 import {
     getUsers,
@@ -182,7 +182,7 @@ const logoutController = async (req: Request, res: Response): Promise<any> => {
     const authHeader: string | undefined = req.headers.authorization;
     const token: string | undefined = authHeader && authHeader.split(' ')[1];
     const reToken: string = req.cookies.refreshToken;
-    const user_data = req.user;
+    //TODO:  const user_data = req.user;
     const {id_asig_consul}: {id_asig_consul: string | undefined} = req.body;
 
     if(token === undefined){
