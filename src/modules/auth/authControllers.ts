@@ -208,7 +208,8 @@ const logoutController = async (req: Request, res: Response): Promise<any> => {
         }
 
         // create the csv reporte...
-        await createCsvDailyReport(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
+        // TODO: des comentar...
+        //await createCsvDailyReport(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
         if(id_asig_consul && id_asig_consul !== 'undefined'){
             // delete de assigned_office register...
             await removeAssignedOffice(id_asig_consul);
