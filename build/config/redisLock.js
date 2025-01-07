@@ -12,13 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.releaseLock = exports.acquireLock = void 0;
+exports.redis = exports.releaseLock = exports.acquireLock = void 0;
+const config_1 = require("./config");
 const ioredis_1 = __importDefault(require("ioredis"));
-const redis = new ioredis_1.default({
-    host: process.env.REDISHOST || "127.0.0.1", // Host de Redis
-    port: Number(process.env.REDISPORT) || 6379, // Puerto de Redis
-    password: process.env.REDISPASSWORD || undefined, // Contraseña de Redis (si la hay)
-});
+const redis = new ioredis_1.default(config_1.SERVER.RURL);
+exports.redis = redis;
 /**
  * Acquire a lock in Redis.
  * If the lock is already in use, wait and try again

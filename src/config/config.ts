@@ -23,5 +23,7 @@ export const SERVER = {
     //REDIS ENVIROMENT VARIABLES...
     REDIS_LOCK_KEY: process.env.LOCK_KEY!,
     REDIS_LOCK_TIMEOUT: process.env.LOCK_TIMEOUT_MS!,
-    REDIS_RETRY_INTERVAL: process.env.RETRY_INTERVAL_MS!
+    REDIS_RETRY_INTERVAL: process.env.RETRY_INTERVAL_MS!,
+    // REDIS CONECTION VARIABLES...
+    RURL: process.env.REDIS_URL!,
 };

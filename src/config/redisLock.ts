@@ -1,10 +1,7 @@
+import { SERVER } from "./config";
 import Redis from "ioredis";
 
-const redis = new Redis({
-    host: process.env.REDISHOST || "127.0.0.1", // Host de Redis
-    port: Number(process.env.REDISPORT) || 6379, // Puerto de Redis
-    password: process.env.REDISPASSWORD || undefined, // Contraseña de Redis (si la hay)
-});
+const redis = new Redis(SERVER.RURL);
 
 /**
  * Acquire a lock in Redis.
@@ -26,4 +23,4 @@ const releaseLock = async (key: string): Promise<void> => {
     await redis.del(key);
 }
 
-export {acquireLock, releaseLock};
+export {acquireLock, releaseLock, redis};
