@@ -1,0 +1,51 @@
+version: '3.9'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - PORT_TS_SERVER=${PORT_TS_SERVER}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_TIME_SIGN=${JWT_TIME_SIGN}
+      - JWT_TIME_REFRESH=${JWT_TIME_REFRESH}
+      - PUBLIC_HOST=${PUBLIC_HOST}
+      - PUBLIC_USER=${PUBLIC_USER}
+      - PUBLIC_PASS=${PUBLIC_PASS}
+      - FRONTEND_SERVER1=${FRONTEND_SERVER1}
+      - FRONTEND_SERVER2=${FRONTEND_SERVER2}
+      - LOCK_KEY=${LOCK_KEY}
+      - LOCK_TIMEOUT_MS=${LOCK_TIMEOUT_MS}
+      - RETRY_INTERVAL_MS=${RETRY_INTERVAL_MS}
+      - REDIS_URL=${REDIS_URL}
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: database_name
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:latest
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql_data:
