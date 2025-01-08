@@ -8,11 +8,12 @@
  * 3. logout
  * 4. forgotpassword
  */
-import { IUser, IUserNoId, IEmailUsername, UserDataFields } from "../../interfaces/IUser";
-import { token, generateRefreshToken, recoveryToken, extractUserInfo } from "../../utils/authUtils";
+import { IUser, IUserNoId, IEmailUsername, UserDataFields, IUserDataFields } from "../../interfaces/IUser";
+import { token, generateRefreshToken, recoveryToken, extractUserInfo, extractAllUserInfo } from "../../utils/authUtils";
 import { IJwtsLogin, IRefreshTokens } from "../../interfaces/IJwt";
 import { secureEmailtoShow } from "../../helpers/emailFormatHelpers";
 import { SERVER } from "../../config/config";
+import { webSocketMessage } from "../shiftManagement/shiftServices";
 import EmailHandler from "../../classes/EmialHandler";
 import prisma from "../../config/prismaClient";
 import bcrypt from 'bcrypt';
@@ -166,6 +167,49 @@ const login = async (username: string, password: string): Promise<IJwtsLogin | n
     }
 }
 
+// This function helps me to delete a register if the user logout without finish the consultation...
+const endAConsultatio = async (id_user: string): Promise<void> => {
+    try {
+        const asignado = await prisma.asignacion.findFirst({
+            where: {
+                id_doc: id_user
+            },
+            orderBy: {
+                create_at: 'desc'
+            }
+        });
+
+        if(asignado){
+            const [_asignacion, consulta] = await Promise.all([
+                prisma.asignacion.delete({
+                    where: {
+                        id_asignacion: asignado.id_asignacion
+                    }
+                }),
+                prisma.consulta.delete({
+                    where: {
+                        id_consulta: asignado.id_consulta
+                    }
+                })
+            ]);
+
+            // check if the patient had an apointment...
+            if(consulta.citado){
+                await prisma.citados.delete({
+                    where: {
+                        id_consulta: consulta.id_consulta
+                    }
+                });
+            }
+
+            const title: string = `Turno ${consulta.turno} terminado`;
+            const message: string = `${consulta.nombre_paciente} gracias por tu preferencia, esperamos verte pronto.`
+            await webSocketMessage(title, message, null, 3);
+        }
+    } catch (error: any) {
+        logging.error("Algo salio mal: " + error.message);
+    }
+}
 /**
  * @method POST
  *
@@ -177,14 +221,15 @@ const login = async (username: string, password: string): Promise<IJwtsLogin | n
 const logout = async (token: string): Promise<number>=> {
     try {
         // decode the token to retrieve the id_user...
-        const decoded: string | null = extractUserInfo(token, UserDataFields.ID_USER);
+        const decodedToken: IUserDataFields | null = extractAllUserInfo(token);
 
-        if(decoded === null){
+        if(decodedToken === null){
             logging.warning('Token expirado o incorrecto.');
             return 400;
         }
 
-        const id_user: string = decoded;
+        const id_user: string = decodedToken.id_user;
+        const rol: string = decodedToken.type;
 
         // insert the token into the revoked_tokens table...
         await prisma.revoked_tokens.create({
@@ -194,7 +239,11 @@ const logout = async (token: string): Promise<number>=> {
             },
         });
 
-        logging.info(`Token revocado.`);
+        if(rol.toLowerCase() === "medico"){
+            await endAConsultatio(id_user);
+        }
+
+        logging.info(`Sesión cerrada.`);
 
         return 201;
     } catch (error: any) {

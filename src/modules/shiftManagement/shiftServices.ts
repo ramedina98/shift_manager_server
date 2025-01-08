@@ -16,6 +16,7 @@ import { incrementCode } from "../../utils/shiftUtils";
 import { SERVER } from "../../config/config";
 import { acquireLock, releaseLock } from "../../config/redisLock";
 import { wss } from "../../server";
+import { todaysDate } from "../../utils/timeUtils";
 import prisma from "../../config/prismaClient";
 import logging from "../../config/logging";
 
@@ -29,12 +30,18 @@ import logging from "../../config/logging";
  * @returns {citados[], consulta[]} --> an appointment list of the day, and a list of general waiting patiens...
  */
 const getCitadosAndConsulta = async (): Promise<IShifts | number> => {
+    //obtaint the time range of the present day...
+        const { startOfDay, endOfDay } = todaysDate();
     try {
         const [consultas, citados, asignados] = await Promise.all([
             // first retrieve all the data from consultas table...
             prisma.consulta.findMany({
                 where: {
                     activo: true,
+                    create_at: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
                 },
                 orderBy: {
                     create_at: 'asc'
@@ -42,6 +49,12 @@ const getCitadosAndConsulta = async (): Promise<IShifts | number> => {
             }),
             // second retrieve all the data from citados table...
             prisma.citados.findMany({
+                where: {
+                    create_at: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
+                },
                 orderBy: {
                     create_at: 'asc'
                 }
@@ -544,5 +557,6 @@ export {
     currentAssignatedPatient,
     newShift,
     removeRegistersAndCreateOneIntoReports,
-    latestShiftNumber
+    latestShiftNumber,
+    webSocketMessage
 };

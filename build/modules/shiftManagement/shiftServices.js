@@ -12,12 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.getCitadosAndConsulta = void 0;
+exports.webSocketMessage = exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.getCitadosAndConsulta = void 0;
 const timeUtils_1 = require("../../utils/timeUtils");
 const shiftUtils_1 = require("../../utils/shiftUtils");
 const config_1 = require("../../config/config");
 const redisLock_1 = require("../../config/redisLock");
 const server_1 = require("../../server");
+const timeUtils_2 = require("../../utils/timeUtils");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const logging_1 = __importDefault(require("../../config/logging"));
 /**
@@ -29,12 +30,18 @@ const logging_1 = __importDefault(require("../../config/logging"));
  * @returns {citados[], consulta[]} --> an appointment list of the day, and a list of general waiting patiens...
  */
 const getCitadosAndConsulta = () => __awaiter(void 0, void 0, void 0, function* () {
+    //obtaint the time range of the present day...
+    const { startOfDay, endOfDay } = (0, timeUtils_2.todaysDate)();
     try {
         const [consultas, citados, asignados] = yield Promise.all([
             // first retrieve all the data from consultas table...
             prismaClient_1.default.consulta.findMany({
                 where: {
                     activo: true,
+                    create_at: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
                 },
                 orderBy: {
                     create_at: 'asc'
@@ -42,6 +49,12 @@ const getCitadosAndConsulta = () => __awaiter(void 0, void 0, void 0, function* 
             }),
             // second retrieve all the data from citados table...
             prismaClient_1.default.citados.findMany({
+                where: {
+                    create_at: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
+                },
                 orderBy: {
                     create_at: 'asc'
                 }
@@ -162,6 +175,7 @@ const webSocketMessage = (title, message, turno, code) => __awaiter(void 0, void
         throw new Error(`WebSocket error: ` + error.message);
     }
 });
+exports.webSocketMessage = webSocketMessage;
 /**
  * @method POST
  *

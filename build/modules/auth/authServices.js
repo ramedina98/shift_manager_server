@@ -27,6 +27,7 @@ const IUser_1 = require("../../interfaces/IUser");
 const authUtils_1 = require("../../utils/authUtils");
 const emailFormatHelpers_1 = require("../../helpers/emailFormatHelpers");
 const config_1 = require("../../config/config");
+const shiftServices_1 = require("../shiftManagement/shiftServices");
 const EmialHandler_1 = __importDefault(require("../../classes/EmialHandler"));
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
@@ -168,6 +169,47 @@ const login = (username, password) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.login = login;
+// This function helps me to delete a register if the user logout without finish the consultation...
+const endAConsultatio = (id_user) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const asignado = yield prismaClient_1.default.asignacion.findFirst({
+            where: {
+                id_doc: id_user
+            },
+            orderBy: {
+                create_at: 'desc'
+            }
+        });
+        if (asignado) {
+            const [_asignacion, consulta] = yield Promise.all([
+                prismaClient_1.default.asignacion.delete({
+                    where: {
+                        id_asignacion: asignado.id_asignacion
+                    }
+                }),
+                prismaClient_1.default.consulta.delete({
+                    where: {
+                        id_consulta: asignado.id_consulta
+                    }
+                })
+            ]);
+            // check if the patient had an apointment...
+            if (consulta.citado) {
+                yield prismaClient_1.default.citados.delete({
+                    where: {
+                        id_consulta: consulta.id_consulta
+                    }
+                });
+            }
+            const title = `Turno ${consulta.turno} terminado`;
+            const message = `${consulta.nombre_paciente} gracias por tu preferencia, esperamos verte pronto.`;
+            yield (0, shiftServices_1.webSocketMessage)(title, message, null, 3);
+        }
+    }
+    catch (error) {
+        logging_1.default.error("Algo salio mal: " + error.message);
+    }
+});
 /**
  * @method POST
  *
@@ -179,12 +221,13 @@ exports.login = login;
 const logout = (token) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         // decode the token to retrieve the id_user...
-        const decoded = (0, authUtils_1.extractUserInfo)(token, IUser_1.UserDataFields.ID_USER);
-        if (decoded === null) {
+        const decodedToken = (0, authUtils_1.extractAllUserInfo)(token);
+        if (decodedToken === null) {
             logging_1.default.warning('Token expirado o incorrecto.');
             return 400;
         }
-        const id_user = decoded;
+        const id_user = decodedToken.id_user;
+        const rol = decodedToken.type;
         // insert the token into the revoked_tokens table...
         yield prismaClient_1.default.revoked_tokens.create({
             data: {
@@ -192,7 +235,10 @@ const logout = (token) => __awaiter(void 0, void 0, void 0, function* () {
                 user_id: id_user
             },
         });
-        logging_1.default.info(`Token revocado.`);
+        if (rol.toLowerCase() === "medico") {
+            yield endAConsultatio(id_user);
+        }
+        logging_1.default.info(`Sesión cerrada.`);
         return 201;
     }
     catch (error) {
