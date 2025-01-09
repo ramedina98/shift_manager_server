@@ -13,33 +13,23 @@ import allRoutes from './index_routes';
 
 //create an instance of the express application...
 const app = express();
+// use cors...
+const corsOptions = {
+    origin: [SERVER.FRONT_SERVER, SERVER.FRONT_SERVER2, SERVER.FRONT_SERVER3],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+        'Authorization',
+        'Content-Type',
+    ],
+}
+
+app.use(cors(corsOptions));
 
 //
 app.use(cookieParser());
-
-// use cors...
-// Configuración dinámica para CORS
-app.use((req, res, next) => {
-    const origin = req.headers.origin; // Captura el origen de la solicitud
-    res.setHeader('Access-Control-Allow-Origin', origin || '*'); // Configura el origen permitido
-    res.setHeader('Access-Control-Allow-Credentials', 'true'); // Permite credenciales
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS'); // Métodos permitidos
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization'); // Cabeceras permitidas
-    next();
-});
-
-// Manejo de solicitudes OPTIONS para preflight
-app.options('*', (req, res) => {
-    const origin = req.headers.origin;
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.sendStatus(204); // Respuesta vacía para OPTIONS
-});
-
-app.use(express.urlencoded({ extended: true }));
-
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 // use middleware to parse JSON request bodies...
 app.use(express.json());
 
