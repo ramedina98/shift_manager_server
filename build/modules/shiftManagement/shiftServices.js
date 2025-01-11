@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.webSocketMessage = exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.getCitadosAndConsulta = void 0;
+exports.webSocketMessage = exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.scheduledPatients = exports.getCitadosAndConsulta = void 0;
 const timeUtils_1 = require("../../utils/timeUtils");
 const shiftUtils_1 = require("../../utils/shiftUtils");
 const config_1 = require("../../config/config");
@@ -213,6 +213,71 @@ const AssignedConsultation = (id_doc, id_consulta, nombre_paciente, consultorio,
 /**
  * @method POST
  *
+ * This service asigns doctors to their scheduled patients...
+ *
+ * @param {string} id_doc - Doctor's unique identifier.
+ * @param {string} nombre_doc - Doctor's first name.
+ * @param {string} apellido_doc - Doctor's last name.
+ * @returns {Promise<IAsignados | number>} Shift information or a status code in case of an error.
+ */
+const scheduledPatients = (id_doc, nombre_doc, apellido_doc) => __awaiter(void 0, void 0, void 0, function* () {
+    const lockAcquired = yield (0, redisLock_1.acquireLock)(config_1.SERVER.REDIS_LOCK_KEY, Number(config_1.SERVER.REDIS_LOCK_TIMEOUT), Number(config_1.SERVER.REDIS_RETRY_INTERVAL));
+    if (!lockAcquired) {
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
+    try {
+        // Check for upcoming appointments within the next 30 minutes
+        const upcomingAppointment = yield prismaClient_1.default.citados.findFirst({
+            where: {
+                id_doc: id_doc,
+            },
+            orderBy: {
+                create_at: 'asc'
+            }
+        });
+        if (!upcomingAppointment) {
+            return 400;
+        }
+        logging_1.default.info(`Upcoming appointment found for doctor ${id_doc}`);
+        const { id_consulta, hora_cita } = upcomingAppointment;
+        // Fetch patient information for the upcoming appointment
+        const paciente = yield prismaClient_1.default.consulta.findFirst({
+            where: { id_consulta },
+        });
+        // Fetch consultorio information for the doctor
+        const consultorio = yield prismaClient_1.default.asignacion_consultorio.findFirst({
+            where: { id_doc },
+        });
+        // patient assignment record...
+        const id_asignacion = yield AssignedConsultation(id_doc, id_consulta, `${paciente === null || paciente === void 0 ? void 0 : paciente.nombre_paciente} ${paciente === null || paciente === void 0 ? void 0 : paciente.apellido_paciente}`, consultorio === null || consultorio === void 0 ? void 0 : consultorio.num_consultorio, `${nombre_doc} ${apellido_doc}`, paciente === null || paciente === void 0 ? void 0 : paciente.turno);
+        // Return upcoming appointment information
+        return {
+            id_consulta: paciente === null || paciente === void 0 ? void 0 : paciente.id_consulta,
+            nombre_doc,
+            apellido_doc,
+            hora_cita,
+            nombre_paciente: (paciente === null || paciente === void 0 ? void 0 : paciente.nombre_paciente) || 'N/A',
+            apellido_paciente: (paciente === null || paciente === void 0 ? void 0 : paciente.apellido_paciente) || 'N/A',
+            turno: (paciente === null || paciente === void 0 ? void 0 : paciente.turno) || 'N/A',
+            consultorio: (consultorio === null || consultorio === void 0 ? void 0 : consultorio.num_consultorio) || 0,
+            visita: paciente === null || paciente === void 0 ? void 0 : paciente.tipo_paciente,
+            create_at: paciente === null || paciente === void 0 ? void 0 : paciente.create_at,
+            id_asignacion: id_asignacion
+        };
+    }
+    catch (error) {
+        // Log and handle errors
+        logging_1.default.error(`Error in getShiftAsignado: ${error.message}`);
+        throw new Error(`Error: ${error.message}`);
+    }
+    finally {
+        yield (0, redisLock_1.releaseLock)(config_1.SERVER.REDIS_LOCK_KEY);
+    }
+});
+exports.scheduledPatients = scheduledPatients;
+/**
+ * @method POST
+ *
  * In this service, the data of the waiting shifts are entered into the table of assigned shifts.
  * WS needed...
  *
@@ -227,47 +292,6 @@ const shiftAsignado = (id_doc, nombre_doc, apellido_doc) => __awaiter(void 0, vo
         throw new Error("Failed to acquire lock after multiple attempts.");
     }
     try {
-        const now = new Date();
-        const nextHalfHour = new Date(now.getTime() + 30 * 60 * 1000); // Calculate 30 minutes ahead
-        // Check for upcoming appointments within the next 30 minutes
-        const upcomingAppointment = yield prismaClient_1.default.citados.findFirst({
-            where: {
-                id_doc: id_doc,
-                hora_cita: {
-                    gte: now,
-                    lte: nextHalfHour,
-                },
-            },
-        });
-        console.log("citado: ", upcomingAppointment);
-        if (upcomingAppointment) {
-            logging_1.default.info(`Upcoming appointment found for doctor ${id_doc}`);
-            const { id_consulta, hora_cita } = upcomingAppointment;
-            // Fetch patient information for the upcoming appointment
-            const paciente = yield prismaClient_1.default.consulta.findFirst({
-                where: { id_consulta },
-            });
-            // Fetch consultorio information for the doctor
-            const consultorio = yield prismaClient_1.default.asignacion_consultorio.findFirst({
-                where: { id_doc },
-            });
-            // patient assignment record...
-            const id_asignacion = yield AssignedConsultation(id_doc, id_consulta, `${paciente === null || paciente === void 0 ? void 0 : paciente.nombre_paciente} ${paciente === null || paciente === void 0 ? void 0 : paciente.apellido_paciente}`, consultorio === null || consultorio === void 0 ? void 0 : consultorio.num_consultorio, `${nombre_doc} ${apellido_doc}`, paciente === null || paciente === void 0 ? void 0 : paciente.turno);
-            // Return upcoming appointment information
-            return {
-                id_consulta: paciente === null || paciente === void 0 ? void 0 : paciente.id_consulta,
-                nombre_doc,
-                apellido_doc,
-                hora_cita,
-                nombre_paciente: (paciente === null || paciente === void 0 ? void 0 : paciente.nombre_paciente) || 'N/A',
-                apellido_paciente: (paciente === null || paciente === void 0 ? void 0 : paciente.apellido_paciente) || 'N/A',
-                turno: (paciente === null || paciente === void 0 ? void 0 : paciente.turno) || 'N/A',
-                consultorio: (consultorio === null || consultorio === void 0 ? void 0 : consultorio.num_consultorio) || 0,
-                visita: paciente === null || paciente === void 0 ? void 0 : paciente.tipo_paciente,
-                create_at: paciente === null || paciente === void 0 ? void 0 : paciente.create_at,
-                id_asignacion: id_asignacion
-            };
-        }
         const nextPatient = yield prismaClient_1.default.consulta.findFirst({
             where: {
                 activo: true,

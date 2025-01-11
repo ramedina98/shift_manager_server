@@ -6,6 +6,7 @@
 import { Router } from "express";
 import {
     getCitadosAndConsultaController,
+    scheduledPatientsController,
     shiftAsignadoController,
     currentAssignatedPatientControler,
     newShiftController,
@@ -21,6 +22,7 @@ shiftRouter.get('/', getCitadosAndConsultaController);
 shiftRouter.get('/current-shift/', checkRevokedToken, currentAssignatedPatientControler);
 shiftRouter.get('/last-shift/', checkRevokedToken, latestShiftNumberController);
 // POST...
+shiftRouter.post('/schedule-patient/', checkRevokedToken, scheduledPatientsController);
 shiftRouter.post('/next-shifts/', checkRevokedToken, shiftAsignadoController);
 shiftRouter.post('/newShift/', newShiftController);
 // DELETE...
