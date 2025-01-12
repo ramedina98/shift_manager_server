@@ -11,7 +11,8 @@ import {
     currentAssignatedPatientControler,
     newShiftController,
     removeRegistersAndCreateOneIntoReportsController,
-    latestShiftNumberController
+    latestShiftNumberController,
+    numberOfSchedulePatientsController
 } from "./shiftControllers";
 import checkRevokedToken from "../../middleware/checkRevokedTokensMiddleware";
 
@@ -21,6 +22,7 @@ const shiftRouter = Router();
 shiftRouter.get('/', getCitadosAndConsultaController);
 shiftRouter.get('/current-shift/', checkRevokedToken, currentAssignatedPatientControler);
 shiftRouter.get('/last-shift/', checkRevokedToken, latestShiftNumberController);
+shiftRouter.get('/num-schpatients/', checkRevokedToken, numberOfSchedulePatientsController);
 // POST...
 shiftRouter.post('/schedule-patient/', checkRevokedToken, scheduledPatientsController);
 shiftRouter.post('/next-shifts/', checkRevokedToken, shiftAsignadoController);

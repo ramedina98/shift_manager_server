@@ -232,6 +232,30 @@ const AssignedConsultation = async (id_doc: string, id_consulta: number, nombre_
 }
 
 /**
+ * @method GET
+ *
+ * This service helps me know how many schedule patients the doctor have...
+ *
+ * @param id_doc
+ */
+const numberOfSchedulePatients = async (id_doc: string): Promise<string | number> => {
+    try {
+        const schedulePatients = await prisma.citados.findMany({
+            where: {
+                id_doc: id_doc
+            }
+        });
+
+        const numOfPatients = schedulePatients.length;
+
+        return String(numOfPatients);
+    } catch (error: any) {
+        logging.error(`Error: ${error.message}`);
+        throw new Error(`Error: ${error.message}`);
+    }
+}
+
+/**
  * @method POST
  *
  * This service asigns doctors to their scheduled patients...
@@ -582,5 +606,6 @@ export {
     newShift,
     removeRegistersAndCreateOneIntoReports,
     latestShiftNumber,
-    webSocketMessage
+    webSocketMessage,
+    numberOfSchedulePatients
 };

@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.latestShiftNumberController = exports.removeRegistersAndCreateOneIntoReportsController = exports.newShiftController = exports.currentAssignatedPatientControler = exports.shiftAsignadoController = exports.scheduledPatientsController = exports.getCitadosAndConsultaController = void 0;
+exports.numberOfSchedulePatientsController = exports.latestShiftNumberController = exports.removeRegistersAndCreateOneIntoReportsController = exports.newShiftController = exports.currentAssignatedPatientControler = exports.shiftAsignadoController = exports.scheduledPatientsController = exports.getCitadosAndConsultaController = void 0;
 const shiftServices_1 = require("./shiftServices");
 /**
  * @method GET
@@ -66,7 +66,35 @@ const latestShiftNumberController = (_req, res) => __awaiter(void 0, void 0, voi
 });
 exports.latestShiftNumberController = latestShiftNumberController;
 /**
- * @method POS
+ * @method GET
+ *
+ * This controller handle the service number of schedule patients...
+ */
+const numberOfSchedulePatientsController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const user_data = req.user;
+    console.log(user_data.type);
+    try {
+        if (user_data.type.toLowerCase() === "cajero") {
+            return res.status(404).json({
+                message: "Los cajeros no atienden pacientes",
+                data: 0
+            });
+        }
+        const response = yield (0, shiftServices_1.numberOfSchedulePatients)(user_data.id_user);
+        return res.status(200).json({
+            message: "Se encontraron pacientes citados",
+            data: response
+        });
+    }
+    catch (error) {
+        return res.status(500).json({
+            error: `Internal server error: ${error.message}`
+        });
+    }
+});
+exports.numberOfSchedulePatientsController = numberOfSchedulePatientsController;
+/**
+ * @method POST
  *
  * This controller manages the service that makes the appointment of patients...
  * @param {session_token}

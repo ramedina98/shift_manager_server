@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.webSocketMessage = exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.scheduledPatients = exports.getCitadosAndConsulta = void 0;
+exports.numberOfSchedulePatients = exports.webSocketMessage = exports.latestShiftNumber = exports.removeRegistersAndCreateOneIntoReports = exports.newShift = exports.currentAssignatedPatient = exports.shiftAsignado = exports.scheduledPatients = exports.getCitadosAndConsulta = void 0;
 const timeUtils_1 = require("../../utils/timeUtils");
 const shiftUtils_1 = require("../../utils/shiftUtils");
 const config_1 = require("../../config/config");
@@ -210,6 +210,29 @@ const AssignedConsultation = (id_doc, id_consulta, nombre_paciente, consultorio,
         throw new Error(`Error: ${error.message}`);
     }
 });
+/**
+ * @method GET
+ *
+ * This service helps me know how many schedule patients the doctor have...
+ *
+ * @param id_doc
+ */
+const numberOfSchedulePatients = (id_doc) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const schedulePatients = yield prismaClient_1.default.citados.findMany({
+            where: {
+                id_doc: id_doc
+            }
+        });
+        const numOfPatients = schedulePatients.length;
+        return String(numOfPatients);
+    }
+    catch (error) {
+        logging_1.default.error(`Error: ${error.message}`);
+        throw new Error(`Error: ${error.message}`);
+    }
+});
+exports.numberOfSchedulePatients = numberOfSchedulePatients;
 /**
  * @method POST
  *

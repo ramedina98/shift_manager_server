@@ -11,7 +11,8 @@ import {
     currentAssignatedPatient,
     newShift,
     removeRegistersAndCreateOneIntoReports,
-    latestShiftNumber
+    latestShiftNumber,
+    numberOfSchedulePatients
 } from "./shiftServices";
 import { IAsignados, IDataReport, IShifts } from "../../interfaces/IShift";
 import { IPacienteCitado, IPacienteNoId, IShiftsTicketData } from "../../interfaces/IShift";
@@ -73,7 +74,37 @@ const latestShiftNumberController = async (_req: Request, res: Response): Promis
 }
 
 /**
- * @method POS
+ * @method GET
+ *
+ * This controller handle the service number of schedule patients...
+ */
+const numberOfSchedulePatientsController = async (req: Request, res: Response): Promise<any> => {
+    const user_data = req.user;
+
+    console.log(user_data.type);
+    try {
+        if(user_data.type.toLowerCase() === "cajero"){
+            return res.status(404).json({
+                message: "Los cajeros no atienden pacientes",
+                data: 0
+            });
+        }
+
+        const response = await numberOfSchedulePatients(user_data.id_user);
+
+        return res.status(200).json({
+            message: "Proceso exitoso.",
+            data: response
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            error: `Internal server error: ${error.message}`
+        });
+    }
+}
+
+/**
+ * @method POST
  *
  * This controller manages the service that makes the appointment of patients...
  * @param {session_token}
@@ -241,5 +272,6 @@ export {
     currentAssignatedPatientControler,
     newShiftController,
     removeRegistersAndCreateOneIntoReportsController,
-    latestShiftNumberController
+    latestShiftNumberController,
+    numberOfSchedulePatientsController
 };
