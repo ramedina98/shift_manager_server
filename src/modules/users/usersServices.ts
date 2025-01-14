@@ -8,7 +8,7 @@ import { IUser, INoUserIdandPasswordRequired, INoUserIdPasswordandFotoRequired, 
 import { IConsultorio, IReport } from "../../interfaces/IShift";
 import { todaysDate } from "../../utils/timeUtils";
 import prisma from "../../config/prismaClient";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import logging from "../../config/logging";
 import ExcelJS from 'exceljs';
 // import fs from "fs";

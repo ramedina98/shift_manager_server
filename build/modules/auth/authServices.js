@@ -30,7 +30,7 @@ const config_1 = require("../../config/config");
 const shiftServices_1 = require("../shiftManagement/shiftServices");
 const EmialHandler_1 = __importDefault(require("../../classes/EmialHandler"));
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const logging_1 = __importDefault(require("../../config/logging"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 /**
@@ -100,7 +100,7 @@ const insertNewUser = (new_user) => __awaiter(void 0, void 0, void 0, function* 
         return 406;
     }
     // passwrod encryption...
-    const encryptedPassword = yield bcrypt_1.default.hash(new_user.password, 10);
+    const encryptedPassword = yield bcryptjs_1.default.hash(new_user.password, 10);
     // storage the data into the database...
     try {
         // storage the data and wait to get the register done...
@@ -148,7 +148,7 @@ const login = (username, password) => __awaiter(void 0, void 0, void 0, function
             return 404;
         }
         // compare the hashed password...
-        const isPasswordValid = yield bcrypt_1.default.compare(password, user.password);
+        const isPasswordValid = yield bcryptjs_1.default.compare(password, user.password);
         if (!isPasswordValid) {
             logging_1.default.error('Password incorrect.');
             return 401;
@@ -446,7 +446,7 @@ const resetForgotenPassword = (token, newPass) => __awaiter(void 0, void 0, void
         // extract the id...
         const id = decoded;
         // process the new password...
-        const hashedPassword = yield bcrypt_1.default.hash(newPass, 10);
+        const hashedPassword = yield bcryptjs_1.default.hash(newPass, 10);
         // update the password in the database...
         yield prismaClient_1.default.users.update({
             where: { id_user: id },

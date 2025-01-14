@@ -16,7 +16,7 @@ import { SERVER } from "../../config/config";
 import { webSocketMessage } from "../shiftManagement/shiftServices";
 import EmailHandler from "../../classes/EmialHandler";
 import prisma from "../../config/prismaClient";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import logging from "../../config/logging";
 import jwt from "jsonwebtoken";
 

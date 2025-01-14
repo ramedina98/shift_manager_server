@@ -82,7 +82,7 @@ const numberOfSchedulePatientsController = (req, res) => __awaiter(void 0, void 
         }
         const response = yield (0, shiftServices_1.numberOfSchedulePatients)(user_data.id_user);
         return res.status(200).json({
-            message: "Se encontraron pacientes citados",
+            message: "Proceso exitoso.",
             data: response
         });
     }
