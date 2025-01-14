@@ -258,6 +258,9 @@ exports.createCsvDailyReport = createCsvDailyReport;
  * @returns {string}
  */
 const officeAssignment = (id_doc, num_consultorio) => __awaiter(void 0, void 0, void 0, function* () {
+    if (num_consultorio === 0) {
+        return 400;
+    }
     try {
         // check that the offices is already available...
         const emptyOffice = yield prismaClient_1.default.asignacion_consultorio.findFirst({
@@ -269,7 +272,7 @@ const officeAssignment = (id_doc, num_consultorio) => __awaiter(void 0, void 0, 
             if (emptyOffice.id_doc === id_doc) {
                 return emptyOffice.id_asignacion;
             }
-            return 201;
+            return 401;
         }
         // CREATE REGISTER...
         const response = yield prismaClient_1.default.asignacion_consultorio.create({
