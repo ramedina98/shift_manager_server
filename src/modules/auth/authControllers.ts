@@ -12,7 +12,7 @@
 import { Request, Response } from "express";
 import { IEmailUsername, ISissionData, IUser, IUserNoId } from "../../interfaces/IUser";
 import { IJwtsLogin } from "../../interfaces/IJwt";
-// TODO: import { createCsvDailyReport } from "../users/usersServices";
+import { createCsvDailyReport } from "../users/usersServices";
 import { officeAssignment, removeAssignedOffice } from "../users/usersServices";
 import {
     getUsers,
@@ -186,7 +186,7 @@ const logoutController = async (req: Request, res: Response): Promise<any> => {
     const authHeader: string | undefined = req.headers.authorization;
     const token: string | undefined = authHeader && authHeader.split(' ')[1];
     const reToken: string = req.cookies.refreshToken;
-    //TODO:  const user_data = req.user;
+    const user_data = req.user;
     const {id_asig_consul}: {id_asig_consul: string | undefined} = req.body;
 
     if(token === undefined){
@@ -212,8 +212,7 @@ const logoutController = async (req: Request, res: Response): Promise<any> => {
         }
 
         // create the csv reporte...
-        // TODO: des comentar...
-        //await createCsvDailyReport(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
+        await createCsvDailyReport(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
         if(id_asig_consul && id_asig_consul !== 'undefined'){
             // delete de assigned_office register...
             await removeAssignedOffice(id_asig_consul);
