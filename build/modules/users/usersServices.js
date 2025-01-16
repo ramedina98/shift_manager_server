@@ -43,7 +43,7 @@ const logging_1 = __importDefault(require("../../config/logging"));
 const exceljs_1 = __importDefault(require("exceljs"));
 // import fs from "fs";
 const path_1 = __importDefault(require("path"));
-const os = __importStar(require("os"));
+//import * as os from "os";
 const fs = __importStar(require("fs"));
 /**
  * @method GET
@@ -229,8 +229,8 @@ const createCsvDailyReport = (id_doc, nombre_doc) => __awaiter(void 0, void 0, v
                 hora: horaFormatted
             });
         });
-        const desktopPath = path_1.default.join(os.homedir(), 'Desktop');
-        const reporteFolderPath = path_1.default.join(desktopPath, 'reportes');
+        //const desktopPath = path.join(os.homedir(), 'Desktop');
+        const reporteFolderPath = path_1.default.join('/app/reportes');
         // create the reporter folder if it does not exits...
         if (!fs.existsSync(reporteFolderPath)) {
             fs.mkdirSync(reporteFolderPath);

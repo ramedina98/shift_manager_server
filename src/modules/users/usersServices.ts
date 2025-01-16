@@ -13,7 +13,6 @@ import logging from "../../config/logging";
 import ExcelJS from 'exceljs';
 // import fs from "fs";
 import path from "path";
-import * as os from "os";
 import * as fs from "fs";
 
 /**
@@ -215,8 +214,7 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
             });
         });
 
-        const desktopPath = path.join(os.homedir(), 'Desktop');
-        const reporteFolderPath = path.join(desktopPath, 'reportes');
+        const reporteFolderPath = path.join('/app/reportes');
 
         // create the reporter folder if it does not exits...
         if(!fs.existsSync(reporteFolderPath)){
