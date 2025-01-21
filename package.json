@@ -5,7 +5,7 @@
   "scripts": {
     "test": "jest --config jest.config.ts --coverage",
     "build": "rm -rf build/ && tsc",
-    "prisma:migrate": "npx prisma migrate deploy",
+    "prisma:migrate": "npx prisma migrate deploy --schema=/app/prisma/schema.prisma",
     "prisma:generate": "npx prisma generate",
     "start": "node ./build/server.js"
   },
@@ -14,8 +14,8 @@
   "license": "ISC",
   "description": "Servidor para Shift Creator App",
   "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "bcrypt": "^5.1.1",
+    "@prisma/client": "^6.2.1",
+    "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -28,7 +28,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
+    "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.7",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
@@ -38,7 +38,7 @@
     "@types/nodemailer": "^6.4.16",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.13",
-    "prisma": "^5.22.0",
+    "prisma": "^6.2.1",
     "typescript": "^5.6.3"
   }
 }

@@ -19,7 +19,7 @@ const index_routes_1 = __importDefault(require("./index_routes"));
 const app = (0, express_1.default)();
 // use cors...
 const corsOptions = {
-    origin: [config_1.SERVER.FRONT_SERVER, config_1.SERVER.FRONT_SERVER2],
+    origin: [config_1.SERVER.FRONT_SERVER, config_1.SERVER.FRONT_SERVER2, config_1.SERVER.FRONT_SERVER3],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

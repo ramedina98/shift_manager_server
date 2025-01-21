@@ -38,12 +38,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllDoctors = exports.removeAssignedOffice = exports.updateAssignedOffice = exports.officeAssignment = exports.createCsvDailyReport = exports.updatePassword = exports.updateUser = exports.getUser = void 0;
 const timeUtils_1 = require("../../utils/timeUtils");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const logging_1 = __importDefault(require("../../config/logging"));
 const exceljs_1 = __importDefault(require("exceljs"));
 // import fs from "fs";
 const path_1 = __importDefault(require("path"));
-const os = __importStar(require("os"));
 const fs = __importStar(require("fs"));
 /**
  * @method GET
@@ -155,14 +154,14 @@ const updatePassword = (id_user, passwords) => __awaiter(void 0, void 0, void 0,
             return 404;
         }
         // compare the received password with the password in the db...
-        const isValidPassword = yield bcrypt_1.default.compare(passwords.oldPass, user.password);
+        const isValidPassword = yield bcryptjs_1.default.compare(passwords.oldPass, user.password);
         // if the password is wrong, return a message...
         if (!isValidPassword) {
             logging_1.default.error('Contraseña incorrecta.');
             return 401;
         }
         // if the password is correct, change the password in the data base with the new one...
-        const hashedPassword = yield bcrypt_1.default.hash(passwords.newPass, 10);
+        const hashedPassword = yield bcryptjs_1.default.hash(passwords.newPass, 10);
         yield prismaClient_1.default.users.update({
             where: { id_user },
             data: { password: hashedPassword }
@@ -229,8 +228,7 @@ const createCsvDailyReport = (id_doc, nombre_doc) => __awaiter(void 0, void 0, v
                 hora: horaFormatted
             });
         });
-        const desktopPath = path_1.default.join(os.homedir(), 'Desktop');
-        const reporteFolderPath = path_1.default.join(desktopPath, 'reportes');
+        const reporteFolderPath = path_1.default.join('/app/reportes');
         // create the reporter folder if it does not exits...
         if (!fs.existsSync(reporteFolderPath)) {
             fs.mkdirSync(reporteFolderPath);
@@ -258,6 +256,9 @@ exports.createCsvDailyReport = createCsvDailyReport;
  * @returns {string}
  */
 const officeAssignment = (id_doc, num_consultorio) => __awaiter(void 0, void 0, void 0, function* () {
+    if (num_consultorio === 0) {
+        return 400;
+    }
     try {
         // check that the offices is already available...
         const emptyOffice = yield prismaClient_1.default.asignacion_consultorio.findFirst({
@@ -269,7 +270,7 @@ const officeAssignment = (id_doc, num_consultorio) => __awaiter(void 0, void 0, 
             if (emptyOffice.id_doc === id_doc) {
                 return emptyOffice.id_asignacion;
             }
-            return 201;
+            return 401;
         }
         // CREATE REGISTER...
         const response = yield prismaClient_1.default.asignacion_consultorio.create({

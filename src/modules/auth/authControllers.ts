@@ -133,7 +133,7 @@ const loginController = async (req: Request, res: Response): Promise<any> => {
 
             if(result === 404){
                 message = 'Usuario incorrecto.'
-            } else if(result === 401){
+            } else if(result === 402){
                 message = 'Contraseña incorrecta.'
             }
 
@@ -153,7 +153,11 @@ const loginController = async (req: Request, res: Response): Promise<any> => {
             }
 
             if(typeof id_asig_consul === 'number'){
-                return res.status(400).json({ error: 'Consultorio ocupado, verifique bien el numero de consultorio en el que esta.'})
+                if(id_asig_consul === 401){
+                    return res.status(401).json({ error: 'Consultorio ocupado, verifique bien el numero de consultorio en el que esta.'});
+                } else if(id_asig_consul === 400){
+                    return res.status(400).json({ error: 'Seleccione un consultorio valido.'});
+                }
             }
 
 

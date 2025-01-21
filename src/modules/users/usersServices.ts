@@ -8,12 +8,11 @@ import { IUser, INoUserIdandPasswordRequired, INoUserIdPasswordandFotoRequired, 
 import { IConsultorio, IReport } from "../../interfaces/IShift";
 import { todaysDate } from "../../utils/timeUtils";
 import prisma from "../../config/prismaClient";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import logging from "../../config/logging";
 import ExcelJS from 'exceljs';
 // import fs from "fs";
 import path from "path";
-import * as os from "os";
 import * as fs from "fs";
 
 /**
@@ -215,8 +214,7 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
             });
         });
 
-        const desktopPath = path.join(os.homedir(), 'Desktop');
-        const reporteFolderPath = path.join(desktopPath, 'reportes');
+        const reporteFolderPath = path.join('/app/reportes');
 
         // create the reporter folder if it does not exits...
         if(!fs.existsSync(reporteFolderPath)){
@@ -246,6 +244,11 @@ const createCsvDailyReport = async (id_doc: string, nombre_doc: string): Promise
  * @returns {string}
  */
 const officeAssignment = async (id_doc: string, num_consultorio: number): Promise<string | number> => {
+
+    if(num_consultorio === 0){
+        return 400;
+    }
+
     try {
         // check that the offices is already available...
         const emptyOffice: Iasignacion_consultorio | null = await prisma.asignacion_consultorio.findFirst({
@@ -258,7 +261,7 @@ const officeAssignment = async (id_doc: string, num_consultorio: number): Promis
             if(emptyOffice.id_doc === id_doc){
                 return emptyOffice.id_asignacion;
             }
-            return 201;
+            return 401;
         }
 
         // CREATE REGISTER...

@@ -114,7 +114,7 @@ const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function
             if (result === 404) {
                 message = 'Usuario incorrecto.';
             }
-            else if (result === 401) {
+            else if (result === 402) {
                 message = 'Contraseña incorrecta.';
             }
             return res.status(result).json({
@@ -131,7 +131,12 @@ const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function
                 id_asig_consul = yield (0, usersServices_2.officeAssignment)(response.id_user, num_consultorio);
             }
             if (typeof id_asig_consul === 'number') {
-                return res.status(400).json({ error: 'Consultorio ocupado, verifique bien el numero de consultorio en el que esta.' });
+                if (id_asig_consul === 401) {
+                    return res.status(401).json({ error: 'Consultorio ocupado, verifique bien el numero de consultorio en el que esta.' });
+                }
+                else if (id_asig_consul === 400) {
+                    return res.status(400).json({ error: 'Seleccione un consultorio valido.' });
+                }
             }
             res.cookie('refreshToken', result.refreshToken, { httpOnly: true, secure: true, sameSite: 'none', maxAge: 24 * 60 * 60 * 1000 });
             res.status(200).json({

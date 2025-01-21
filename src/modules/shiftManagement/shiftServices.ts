@@ -9,13 +9,14 @@
  * 3. PUT: in order to have the ability to edit an appointment, if the
  * first or las name has been entered incorrectly...
  */
-import { IDataReport, IConsulta, IAsignado, IShifts, ICitas, IConsultas, IConsultorio, IAsignados, IPacienteNoId, IPacienteCitado, IShiftsTicketData } from "../../interfaces/IShift";
+import { IDataReport, IConsulta, IAsignado, IShifts, ICitas, IConsultas, IConsultorio, IAsignados, IPacienteNoId, IPacienteCitado, IShiftsTicketData, ICita } from "../../interfaces/IShift";
 import { IUser } from "../../interfaces/IUser";
 import { formatDateTime } from "../../utils/timeUtils";
 import { incrementCode } from "../../utils/shiftUtils";
 import { SERVER } from "../../config/config";
 import { acquireLock, releaseLock } from "../../config/redisLock";
 import { wss } from "../../server";
+import { todaysDate } from "../../utils/timeUtils";
 import prisma from "../../config/prismaClient";
 import logging from "../../config/logging";
 
@@ -29,12 +30,18 @@ import logging from "../../config/logging";
  * @returns {citados[], consulta[]} --> an appointment list of the day, and a list of general waiting patiens...
  */
 const getCitadosAndConsulta = async (): Promise<IShifts | number> => {
+    //obtaint the time range of the present day...
+        const { startOfDay, endOfDay } = todaysDate();
     try {
         const [consultas, citados, asignados] = await Promise.all([
             // first retrieve all the data from consultas table...
             prisma.consulta.findMany({
                 where: {
                     activo: true,
+                    create_at: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
                 },
                 orderBy: {
                     create_at: 'asc'
@@ -42,6 +49,12 @@ const getCitadosAndConsulta = async (): Promise<IShifts | number> => {
             }),
             // second retrieve all the data from citados table...
             prisma.citados.findMany({
+                where: {
+                    create_at: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
+                },
                 orderBy: {
                     create_at: 'asc'
                 }
@@ -219,6 +232,103 @@ const AssignedConsultation = async (id_doc: string, id_consulta: number, nombre_
 }
 
 /**
+ * @method GET
+ *
+ * This service helps me know how many schedule patients the doctor have...
+ *
+ * @param id_doc
+ */
+const numberOfSchedulePatients = async (id_doc: string): Promise<string | number> => {
+    try {
+        const schedulePatients = await prisma.citados.findMany({
+            where: {
+                id_doc: id_doc
+            }
+        });
+
+        const numOfPatients = schedulePatients.length;
+
+        return String(numOfPatients);
+    } catch (error: any) {
+        logging.error(`Error: ${error.message}`);
+        throw new Error(`Error: ${error.message}`);
+    }
+}
+
+/**
+ * @method POST
+ *
+ * This service asigns doctors to their scheduled patients...
+ *
+ * @param {string} id_doc - Doctor's unique identifier.
+ * @param {string} nombre_doc - Doctor's first name.
+ * @param {string} apellido_doc - Doctor's last name.
+ * @returns {Promise<IAsignados | number>} Shift information or a status code in case of an error.
+ */
+const scheduledPatients = async (id_doc: string, nombre_doc: string, apellido_doc: string): Promise<IAsignados | number> => {
+    const lockAcquired = await acquireLock(SERVER.REDIS_LOCK_KEY, Number(SERVER.REDIS_LOCK_TIMEOUT), Number(SERVER.REDIS_RETRY_INTERVAL));
+
+    if(!lockAcquired){
+        throw new Error("Failed to acquire lock after multiple attempts.");
+    }
+
+    try {
+        // Check for upcoming appointments within the next 30 minutes
+        const upcomingAppointment: ICita | null = await prisma.citados.findFirst({
+            where: {
+                id_doc: id_doc,
+            },
+            orderBy: {
+                create_at: 'asc'
+            }
+        });
+
+        if (!upcomingAppointment) {
+            return 400;
+        }
+
+        logging.info(`Upcoming appointment found for doctor ${id_doc}`);
+
+        const { id_consulta, hora_cita } = upcomingAppointment!;
+
+        // Fetch patient information for the upcoming appointment
+        const paciente = await prisma.consulta.findFirst({
+            where: { id_consulta },
+        });
+
+        // Fetch consultorio information for the doctor
+        const consultorio = await prisma.asignacion_consultorio.findFirst({
+            where: { id_doc },
+        });
+
+        // patient assignment record...
+        const id_asignacion: string = await AssignedConsultation(id_doc, id_consulta, `${paciente?.nombre_paciente} ${paciente?.apellido_paciente}`, consultorio?.num_consultorio, `${nombre_doc} ${apellido_doc}`,paciente?.turno);
+
+        // Return upcoming appointment information
+        return {
+            id_consulta: paciente?.id_consulta,
+            nombre_doc,
+            apellido_doc,
+            hora_cita,
+            nombre_paciente: paciente?.nombre_paciente || 'N/A',
+            apellido_paciente: paciente?.apellido_paciente || 'N/A',
+            turno: paciente?.turno || 'N/A',
+            consultorio: consultorio?.num_consultorio || 0,
+            visita: paciente?.tipo_paciente,
+            create_at: paciente?.create_at,
+            id_asignacion: id_asignacion
+        };
+    } catch (error: any) {
+        // Log and handle errors
+        logging.error(`Error in getShiftAsignado: ${error.message}`);
+        throw new Error(`Error: ${error.message}`);
+    } finally{
+        await releaseLock(SERVER.REDIS_LOCK_KEY);
+    }
+
+}
+
+/**
  * @method POST
  *
  * In this service, the data of the waiting shifts are entered into the table of assigned shifts.
@@ -237,56 +347,6 @@ const shiftAsignado = async (id_doc: string, nombre_doc: string, apellido_doc: s
     }
 
     try {
-        const now = new Date();
-        const nextHalfHour = new Date(now.getTime() + 30 * 60 * 1000); // Calculate 30 minutes ahead
-
-        // Check for upcoming appointments within the next 30 minutes
-        const upcomingAppointment = await prisma.citados.findFirst({
-            where: {
-                id_doc: id_doc,
-                hora_cita: {
-                    gte: now,
-                    lte: nextHalfHour,
-                },
-            },
-        });
-
-        console.log("citado: ", upcomingAppointment);
-
-        if (upcomingAppointment) {
-            logging.info(`Upcoming appointment found for doctor ${id_doc}`);
-
-            const { id_consulta, hora_cita } = upcomingAppointment;
-
-            // Fetch patient information for the upcoming appointment
-            const paciente = await prisma.consulta.findFirst({
-                where: { id_consulta },
-            });
-
-            // Fetch consultorio information for the doctor
-            const consultorio = await prisma.asignacion_consultorio.findFirst({
-                where: { id_doc },
-            });
-
-            // patient assignment record...
-            const id_asignacion: string = await AssignedConsultation(id_doc, id_consulta, `${paciente?.nombre_paciente} ${paciente?.apellido_paciente}`, consultorio?.num_consultorio, `${nombre_doc} ${apellido_doc}`,paciente?.turno);
-
-            // Return upcoming appointment information
-            return {
-                id_consulta: paciente?.id_consulta,
-                nombre_doc,
-                apellido_doc,
-                hora_cita,
-                nombre_paciente: paciente?.nombre_paciente || 'N/A',
-                apellido_paciente: paciente?.apellido_paciente || 'N/A',
-                turno: paciente?.turno || 'N/A',
-                consultorio: consultorio?.num_consultorio || 0,
-                visita: paciente?.tipo_paciente,
-                create_at: paciente?.create_at,
-                id_asignacion: id_asignacion
-            };
-        }
-
         const nextPatient: IConsulta | null = await prisma.consulta.findFirst({
             where: {
                 activo: true,
@@ -540,9 +600,12 @@ const removeRegistersAndCreateOneIntoReports = async (id_doc: string, id_consult
 
 export {
     getCitadosAndConsulta,
+    scheduledPatients,
     shiftAsignado,
     currentAssignatedPatient,
     newShift,
     removeRegistersAndCreateOneIntoReports,
-    latestShiftNumber
+    latestShiftNumber,
+    webSocketMessage,
+    numberOfSchedulePatients
 };

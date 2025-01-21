@@ -16,7 +16,9 @@ const shiftRouter = (0, express_1.Router)();
 shiftRouter.get('/', shiftControllers_1.getCitadosAndConsultaController);
 shiftRouter.get('/current-shift/', checkRevokedTokensMiddleware_1.default, shiftControllers_1.currentAssignatedPatientControler);
 shiftRouter.get('/last-shift/', checkRevokedTokensMiddleware_1.default, shiftControllers_1.latestShiftNumberController);
+shiftRouter.get('/num-schpatients/', checkRevokedTokensMiddleware_1.default, shiftControllers_1.numberOfSchedulePatientsController);
 // POST...
+shiftRouter.post('/schedule-patient/', checkRevokedTokensMiddleware_1.default, shiftControllers_1.scheduledPatientsController);
 shiftRouter.post('/next-shifts/', checkRevokedTokensMiddleware_1.default, shiftControllers_1.shiftAsignadoController);
 shiftRouter.post('/newShift/', shiftControllers_1.newShiftController);
 // DELETE...

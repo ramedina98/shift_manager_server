@@ -6,11 +6,13 @@
 import { Request, Response } from "express";
 import {
     getCitadosAndConsulta,
+    scheduledPatients,
     shiftAsignado,
     currentAssignatedPatient,
     newShift,
     removeRegistersAndCreateOneIntoReports,
-    latestShiftNumber
+    latestShiftNumber,
+    numberOfSchedulePatients
 } from "./shiftServices";
 import { IAsignados, IDataReport, IShifts } from "../../interfaces/IShift";
 import { IPacienteCitado, IPacienteNoId, IShiftsTicketData } from "../../interfaces/IShift";
@@ -67,6 +69,68 @@ const latestShiftNumberController = async (_req: Request, res: Response): Promis
     } catch (error: any) {
         return res.status(500).json({
             error: `Internal server error: ${error.message}`
+        });
+    }
+}
+
+/**
+ * @method GET
+ *
+ * This controller handle the service number of schedule patients...
+ */
+const numberOfSchedulePatientsController = async (req: Request, res: Response): Promise<any> => {
+    const user_data = req.user;
+
+    console.log(user_data.type);
+    try {
+        if(user_data.type.toLowerCase() === "cajero"){
+            return res.status(404).json({
+                message: "Los cajeros no atienden pacientes",
+                data: 0
+            });
+        }
+
+        const response = await numberOfSchedulePatients(user_data.id_user);
+
+        return res.status(200).json({
+            message: "Proceso exitoso.",
+            data: response
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            error: `Internal server error: ${error.message}`
+        });
+    }
+}
+
+/**
+ * @method POST
+ *
+ * This controller manages the service that makes the appointment of patients...
+ * @param {session_token}
+ */
+const scheduledPatientsController = async (req: Request, res: Response): Promise<any> => {
+    const user_data = req.user;
+
+    try {
+        // feetch the schedule patient...
+        const response: IAsignados | number = await scheduledPatients(user_data.id_user, user_data.nombre, user_data.apellido);
+
+        // handler cases where no shift is assigned...
+        if(typeof response === 'number'){
+            return res.status(400).json({
+                message: 'No hay turno citados para asignar en este momento.',
+                shift: []
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Turno asignado',
+            shift: response
+        });
+    } catch (error: any) {
+        return res.status(500).json({
+            error: `Internal server error ${error.message}`
         });
     }
 }
@@ -203,9 +267,11 @@ const removeRegistersAndCreateOneIntoReportsController = async (req:Request, res
 
 export {
     getCitadosAndConsultaController,
+    scheduledPatientsController,
     shiftAsignadoController,
     currentAssignatedPatientControler,
     newShiftController,
     removeRegistersAndCreateOneIntoReportsController,
-    latestShiftNumberController
+    latestShiftNumberController,
+    numberOfSchedulePatientsController
 };
