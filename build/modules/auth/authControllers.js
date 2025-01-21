@@ -13,8 +13,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.resetForgotenPasswordController = exports.recoverdPasswordController = exports.refreshTokenController = exports.logoutController = exports.loginController = exports.insertNewUserController = exports.getUsersController = void 0;
+// import { createCsvDailyReport } from "../users/usersServices";
 const usersServices_1 = require("../users/usersServices");
-const usersServices_2 = require("../users/usersServices");
 const authServices_1 = require("./authServices");
 const prismaClient_1 = __importDefault(require("../../config/prismaClient"));
 /**
@@ -128,7 +128,7 @@ const loginController = (req, res) => __awaiter(void 0, void 0, void 0, function
             }
             let id_asig_consul;
             if (response.type.toLowerCase() === 'medico') {
-                id_asig_consul = yield (0, usersServices_2.officeAssignment)(response.id_user, num_consultorio);
+                id_asig_consul = yield (0, usersServices_1.officeAssignment)(response.id_user, num_consultorio);
             }
             if (typeof id_asig_consul === 'number') {
                 if (id_asig_consul === 401) {
@@ -163,7 +163,7 @@ const logoutController = (req, res) => __awaiter(void 0, void 0, void 0, functio
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.split(' ')[1];
     const reToken = req.cookies.refreshToken;
-    const user_data = req.user;
+    // const user_data = req.user;
     const { id_asig_consul } = req.body;
     if (token === undefined) {
         return res.status(401).json({
@@ -184,10 +184,10 @@ const logoutController = (req, res) => __awaiter(void 0, void 0, void 0, functio
             });
         }
         // create the csv reporte...
-        yield (0, usersServices_1.createCsvDailyReport)(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
+        // await createCsvDailyReport(user_data.id_user, `${user_data.nombre} ${user_data.apellido}`);
         if (id_asig_consul && id_asig_consul !== 'undefined') {
             // delete de assigned_office register...
-            yield (0, usersServices_2.removeAssignedOffice)(id_asig_consul);
+            yield (0, usersServices_1.removeAssignedOffice)(id_asig_consul);
         }
         // clean the cooki of refresh token...
         res.clearCookie('refreshToken');
