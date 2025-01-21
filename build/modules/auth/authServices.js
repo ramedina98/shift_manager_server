@@ -151,7 +151,7 @@ const login = (username, password) => __awaiter(void 0, void 0, void 0, function
         const isPasswordValid = yield bcryptjs_1.default.compare(password, user.password);
         if (!isPasswordValid) {
             logging_1.default.error('Password incorrect.');
-            return 401;
+            return 402;
         }
         // create the access token...
         const accessToken = (0, authUtils_1.token)(user, config_1.SERVER.JWT_TIME);

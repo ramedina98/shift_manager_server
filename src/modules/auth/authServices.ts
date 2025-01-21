@@ -147,7 +147,7 @@ const login = async (username: string, password: string): Promise<IJwtsLogin | n
         const isPasswordValid: boolean = await bcrypt.compare(password, user.password);
         if(!isPasswordValid){
             logging.error('Password incorrect.');
-            return 401;
+            return 402;
         }
 
         // create the access token...
